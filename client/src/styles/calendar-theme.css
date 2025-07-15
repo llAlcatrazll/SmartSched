@@ -1,0 +1,20 @@
+/* calendar-theme.css */
+.fc .fc-toolbar-title {
+    color: #96161C;
+    font-weight: 600;
+}
+
+.fc .fc-button {
+    background-color: #96161C;
+    border-color: #96161C;
+    color: white;
+}
+
+.fc .fc-button:hover {
+    background-color: #7a1217;
+    border-color: #7a1217;
+}
+
+.fc .fc-button:focus {
+    box-shadow: 0 0 0 0.2rem rgba(150, 22, 28, 0.5);
+}
