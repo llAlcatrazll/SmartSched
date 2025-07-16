@@ -104,6 +104,7 @@ export default function Booking() {
     const facilities = Array.from(new Set(bookings.map(b => b.event_facility || b.facility || '').filter(Boolean)));
     const orgs = Array.from(new Set(bookings.map(b => b.organization || b.org || '').filter(Boolean)));
     const statuses = ['All', 'Approved', 'Pending', 'Rejected'];
+    const [editingId, setEditingId] = useState(null);
 
     const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -112,8 +113,14 @@ export default function Booking() {
     const handleSubmit = async e => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:5000/api/create-booking', {
-                method: 'POST',
+            const url = editingId
+                ? `http://localhost:5000/api/edit-booking/${editingId}`
+                : 'http://localhost:5000/api/create-booking';
+
+            const method = editingId ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     event_date: form.date,
@@ -126,20 +133,16 @@ export default function Booking() {
                     contact: form.contact
                 })
             });
+
             const data = await response.json();
             if (data.success) {
-                // Refetch bookings after successful creation
+                alert(editingId ? 'Booking updated successfully' : 'Booking created successfully');
                 fetch('http://localhost:5000/api/fetch-bookings')
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
                             setBookings(data.bookings);
-                        } else {
-                            console.log('Fetch bookings failed:', data.message || data.error);
                         }
-                    })
-                    .catch(err => {
-                        console.log('Fetch bookings error:', err);
                     });
                 setForm({
                     title: '',
@@ -151,14 +154,39 @@ export default function Booking() {
                     org: '',
                     contact: ''
                 });
+                setEditingId(null);
                 setShowForm(false);
             } else {
                 alert(data.message || 'Booking failed');
             }
+
         } catch (err) {
             alert('Server error');
         }
     };
+
+    const extractDate = (datetime) => {
+        if (!datetime) return '';
+        return datetime.split('T')[0];
+    };
+
+    const handleEdit = (booking) => {
+        setEditingId(booking.id); // capture ID so we know it's edit mode
+        setForm({
+            title: booking.event_name || booking.title || '',
+            facility: booking.event_facility || booking.facility || '',
+            date: extractDate(booking.event_date || booking.date || ''),
+            startTime: booking.starting_time || booking.startTime || '',
+            endTime: booking.ending_time || booking.endTime || '',
+            requestedBy: booking.requested_by || booking.requestedBy || '',
+            org: booking.organization || booking.org || '',
+            contact: booking.contact || ''
+        });
+        setShowForm(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+
 
     // Pagination logic
     const totalRows = filtered.length;
@@ -314,8 +342,9 @@ export default function Booking() {
                                 type="submit"
                                 className="bg-[#96161C] text-white px-8 py-2 rounded-lg font-semibold hover:bg-[#7a1217] transition"
                             >
-                                Create
+                                {editingId ? 'Save' : 'Create'}
                             </button>
+
                             <button
                                 type="button"
                                 className="bg-gray-200 text-gray-800 px-8 py-2 rounded-lg font-semibold hover:bg-gray-300 transition"
@@ -458,8 +487,11 @@ export default function Booking() {
                                 <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
                                     Contact
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tr-xl">
+                                <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
                                     Status
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tr-xl">
+                                    Actions
                                 </th>
                             </tr>
                         </thead>
@@ -498,6 +530,18 @@ export default function Booking() {
                                                 {b.status || 'Pending'}
                                             </span>
                                         </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                                            <button
+                                                onClick={() => handleEdit(b)}
+                                                className="text-[#96161C] hover:text-[#7a1217] transition"
+                                                title="Edit Booking"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path d="M17.414 2.586a2 2 0 010 2.828L8.414 14.414l-4.828 1.414 1.414-4.828L14.586 2.586a2 2 0 012.828 0z" />
+                                                </svg>
+                                            </button>
+                                        </td>
+
                                     </tr>
                                 ))
                             )}
