@@ -21,8 +21,8 @@ router.post('/', async (req, res) => {
     try {
         await pool.query(
             `INSERT INTO "Booking" 
-            (event_date, starting_time, ending_time, event_name, event_facility, requested_by, organization, contact)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            (event_date, starting_time, ending_time, event_name, event_facility, requested_by, organization, contact, status)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active')`,
             [event_date, starting_time, ending_time, event_name, event_facility, requested_by, organization, contact]
         );
         res.json({ success: true, message: 'Booking created successfully' });

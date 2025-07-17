@@ -25,11 +25,13 @@ const loginRoute = require('./routes/account/login');
 const createBookingRoute = require('./routes/booking/createBooking');
 const fetchBookingRoute = require('./routes/booking/fetchBooking');
 const editBookingRoute = require('./routes/booking/editBooking');
+const deleteBookingRoute = require('./routes/booking/deleteBooking');
 
 app.use('/api/login', loginRoute);
 app.use('/api/create-booking', createBookingRoute);
 app.use('/api/fetch-bookings', fetchBookingRoute);
 app.use('/api/edit-booking', editBookingRoute);
+app.use('/api/delete-booking', deleteBookingRoute);
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);

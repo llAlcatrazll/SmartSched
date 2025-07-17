@@ -165,6 +165,29 @@ export default function Booking() {
         }
     };
 
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this booking?')) return;
+
+        try {
+            const res = await fetch(`/api/delete-booking/${id}`, {
+                method: 'PATCH'
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                alert('Booking marked as deleted');
+                // Refetch your bookings or remove from state
+            } else {
+                alert('Failed to update status');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Server error');
+        }
+    };
+
+
+
     const extractDate = (datetime) => {
         if (!datetime) return '';
         return datetime.split('T')[0];
@@ -510,7 +533,14 @@ export default function Booking() {
                                     >
                                         <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#96161C]">{b.event_name || b.title}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">{b.event_facility || b.facility || '-'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">{b.event_date || b.date}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            {new Date(b.event_date || b.date).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: '2-digit',
+                                            })}
+                                        </td>
+
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {(b.starting_time && b.ending_time)
                                                 ? `${formatTime(b.starting_time)} - ${formatTime(b.ending_time)}`
@@ -530,7 +560,7 @@ export default function Booking() {
                                                 {b.status || 'Pending'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                                        <td className="px-6 py-4 whitespace-nowrap text-right flex gap-2 justify-end">
                                             <button
                                                 onClick={() => handleEdit(b)}
                                                 className="text-[#96161C] hover:text-[#7a1217] transition"
@@ -540,7 +570,18 @@ export default function Booking() {
                                                     <path d="M17.414 2.586a2 2 0 010 2.828L8.414 14.414l-4.828 1.414 1.414-4.828L14.586 2.586a2 2 0 012.828 0z" />
                                                 </svg>
                                             </button>
+
+                                            <button
+                                                onClick={() => handleDelete(b.id)} // assuming b.id is the primary key
+                                                className="text-red-600 hover:text-red-800 transition"
+                                                title="Delete Booking"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M9 3v1H4v2h16V4h-5V3H9zm1 5v12h2V8h-2zm4 0v12h2V8h-2z" />
+                                                </svg>
+                                            </button>
                                         </td>
+
 
                                     </tr>
                                 ))
