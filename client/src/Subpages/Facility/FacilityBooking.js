@@ -16,6 +16,9 @@ export default function Booking() {
     const [showForm, setShowForm] = useState(true);
     const [bookings, setBookings] = useState([]);
     const [filtered, setFiltered] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [showEquipment, setshowEquipment] = useState(false);
     const [form, setForm] = useState({
         title: '',
         facility: '',
@@ -28,8 +31,6 @@ export default function Booking() {
     });
 
     // Pagination state
-    const [currentPage, setCurrentPage] = useState(1);
-    const [rowsPerPage, setRowsPerPage] = useState(10);
 
     // Filter state
     const [filter, setFilter] = useState({
@@ -357,6 +358,23 @@ export default function Booking() {
                                         required
                                     />
                                 </div>
+                                <div>
+                                    <button
+                                        type="submit"
+                                        className="bg-[#96161C] text-white px-8 py-2 rounded-lg font-semibold hover:bg-[#7a1217] transition"
+                                    >
+                                        Add Equipment +
+                                    </button>
+                                </div>
+
+                            </div>
+                            <div className='mt-5'>
+                                <select className='w-1/3 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C] '>
+                                    <option value="someOption">DLP</option>
+                                    <option value="someOption">Projector</option>
+                                    <option value="someOption">Microphone</option>
+                                    <option value="someOption">Speaker</option>
+                                </select>
                             </div>
                         </div>
                         {/* Actions */}

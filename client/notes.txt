@@ -1,0 +1,8 @@
+
+
+
+
+
+
+
+// -- after creating bookings prompt secondary confirmation woul you like to add an equipment then done

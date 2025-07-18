@@ -23,15 +23,21 @@ app.get('/api/test', async (req, res) => {
 
 const loginRoute = require('./routes/account/login');
 const createBookingRoute = require('./routes/booking/createBooking');
+const deleteBookingRoute = require('./routes/booking/deleteBooking');
 const fetchBookingRoute = require('./routes/booking/fetchBooking');
 const editBookingRoute = require('./routes/booking/editBooking');
-const deleteBookingRoute = require('./routes/booking/deleteBooking');
+const fetchVehiclesRoute = require('./routes/booking/fetchVehicles');
+const vehicleBookingRoute = require('./routes/booking/createVehicleBooking');
+const fetchVehicleBookingRoute = require('./routes/booking/fetchVehicleBooking');
 
 app.use('/api/login', loginRoute);
 app.use('/api/create-booking', createBookingRoute);
+app.use('/api/delete-booking', deleteBookingRoute);
 app.use('/api/fetch-bookings', fetchBookingRoute);
 app.use('/api/edit-booking', editBookingRoute);
-app.use('/api/delete-booking', deleteBookingRoute);
+app.use('/api/fetch-vehicles', fetchVehiclesRoute);
+app.use('/api/vehicle-booking', vehicleBookingRoute);
+app.use('/api/vehicle-booking', fetchVehicleBookingRoute);
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function VehicleBooking() {
     const [showForm, setShowForm] = useState(true);
     const [bookings, setBookings] = useState([]);
+
     const [form, setForm] = useState({
         vehicleType: '',
         requestor: '',
@@ -16,33 +17,74 @@ export default function VehicleBooking() {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (editingId !== null) {
-            const updated = bookings.map((b, idx) =>
-                idx === editingId ? form : b
-            );
-            setBookings(updated);
-            setEditingId(null);
-        } else {
-            setBookings([...bookings, form]);
-        }
 
-        setForm({
-            vehicleType: '',
-            requestor: '',
-            date: '',
-            department: '',
-            purpose: ''
-        });
-        setShowForm(false);
+        const newBooking = {
+            vehicleType: form.vehicleType,
+            requestor: form.requestor,
+            department: form.department,
+            date: form.date,
+            purpose: form.purpose,
+        };
+
+        try {
+            const res = await fetch('http://localhost:5000/api/vehicle-booking', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newBooking),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setBookings([...bookings, newBooking]);
+                setForm({
+                    vehicleType: '',
+                    requestor: '',
+                    date: '',
+                    department: '',
+                    purpose: ''
+                });
+                setShowForm(false);
+            } else {
+                alert(data.message || 'Failed to create vehicle booking');
+            }
+        } catch (error) {
+            console.error('Error submitting booking:', error);
+            alert('Server error, could not create booking.');
+        }
     };
+    useEffect(() => {
+        const fetchBookings = async () => {
+            try {
+                const res = await fetch('http://localhost:5000/api/vehicle-booking');
+                const data = await res.json();
+                setBookings(data);
+            } catch (error) {
+                console.error('Error fetching bookings:', error);
+            }
+        };
+
+        fetchBookings();
+    }, []);
+
 
     const handleEdit = (index) => {
         setEditingId(index);
         setForm(bookings[index]);
         setShowForm(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    const [filter, setFilter] = useState({
+        search: '',
+        dateFrom: '',
+        dateTo: ''
+    });
+
+    const handleFilterChange = (e) => {
+        setFilter({ ...filter, [e.target.name]: e.target.value });
     };
 
     const handleDelete = (index) => {
@@ -150,8 +192,67 @@ export default function VehicleBooking() {
             </div>
 
             {/* Bookings Table */}
-            <div className="bg-white rounded-xl shadow-md p-8 w-full">
-                <h2 className="text-2xl font-bold text-[#96161C] mb-4">Vehicle Bookings</h2>
+            {/* Filters for Vehicle Booking */}
+            <div className="bg-white rounded-xl shadow-md p-8 w-full mt-8">
+                <div>
+                    <h2 className="text-2xl font-bold text-[#96161C] flex items-center gap-2 justify-start mb-2 md:mb-0">
+                        <svg className="w-7 h-7 text-[#96161C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Vehicle Booking Filters
+                    </h2>
+                </div>
+
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+                    <div className="flex-1 w-full">
+                        <div className="bg-white rounded-xl shadow-none p-0 w-full flex flex-wrap gap-4 items-end justify-between">
+                            <div className="flex-1 min-w-[180px] max-w-xs">
+                                <label className="block text-xs font-semibold mb-1 text-[#96161C]">Search Requestor</label>
+                                <input
+                                    type="text"
+                                    name="search"
+                                    value={filter.search}
+                                    onChange={handleFilterChange}
+                                    placeholder="Search by requestor name"
+                                    className="border rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#96161C]"
+                                />
+                            </div>
+                            <div className="flex-1 min-w-[120px] max-w-xs">
+                                <label className="block text-xs font-semibold mb-1 text-[#96161C]">Date From</label>
+                                <input
+                                    type="date"
+                                    name="dateFrom"
+                                    value={filter.dateFrom}
+                                    onChange={handleFilterChange}
+                                    className="border rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#96161C]"
+                                />
+                            </div>
+                            <div className="flex-1 min-w-[120px] max-w-xs">
+                                <label className="block text-xs font-semibold mb-1 text-[#96161C]">Date To</label>
+                                <input
+                                    type="date"
+                                    name="dateTo"
+                                    value={filter.dateTo}
+                                    onChange={handleFilterChange}
+                                    className="border rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#96161C]"
+                                />
+                            </div>
+                            <button
+                                className="bg-[#96161C] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#7a1217] transition"
+                                onClick={() => setFilter({
+                                    search: '',
+                                    dateFrom: '',
+                                    dateTo: ''
+                                })}
+                                type="button"
+                            >
+                                Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-[#96161C]">
                         <tr>
@@ -169,7 +270,11 @@ export default function VehicleBooking() {
                                 <td colSpan={6} className="text-center py-8 text-gray-500">No vehicle bookings yet.</td>
                             </tr>
                         ) : (
-                            bookings.map((b, index) => (
+                            bookings.filter(b =>
+                                (filter.search === '' || b.requestor.toLowerCase().includes(filter.search.toLowerCase())) &&
+                                (filter.dateFrom === '' || b.date >= filter.dateFrom) &&
+                                (filter.dateTo === '' || b.date <= filter.dateTo)
+                            ).map((b, index) => (
                                 <tr key={index} className="hover:bg-gray-50 transition">
                                     <td className="px-6 py-4">{b.vehicleType}</td>
                                     <td className="px-6 py-4">{b.requestor}</td>
