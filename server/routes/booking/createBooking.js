@@ -19,17 +19,22 @@ router.post('/', async (req, res) => {
     } = req.body;
 
     try {
-        await pool.query(
+        const result = await pool.query(
             `INSERT INTO "Booking" 
             (event_date, starting_time, ending_time, event_name, event_facility, requested_by, organization, contact, status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active')`,
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active')
+            RETURNING id`,
             [event_date, starting_time, ending_time, event_name, event_facility, requested_by, organization, contact]
         );
-        res.json({ success: true, message: 'Booking created successfully' });
+
+        const bookingId = result.rows[0].id;
+
+        res.json({ success: true, id: bookingId, message: 'Booking created successfully' });
     } catch (err) {
         console.error('Create booking error:', err);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
+
 
 module.exports = router;

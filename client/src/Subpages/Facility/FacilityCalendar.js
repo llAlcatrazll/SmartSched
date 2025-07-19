@@ -36,72 +36,7 @@ export default function MyCalendar() {
             </div>
         );
     }
-
-    // useEffect(() => {
-    //     const tempEvents = [
-    //         {
-    //             title: 'Sample 6-Hour Event',
-    //             start: '2025-07-20T09:00:00',
-    //             end: '2025-07-21T15:00:00',
-    //             backgroundColor: '#ff9f89', // light red
-    //             borderColor: '#ff9f89',     // light red border
-    //             textColor: '#000000',       // optional, defaults to white if omitted in timeGrid views
-
-    //             extendedProps: {
-    //                 status: 'Approved',
-    //                 facility: 'Gym',
-    //                 org: 'Org 1'
-    //             }
-    //         },
-    //         {
-    //             title: 'Another 6-Hour Event',
-    //             start: '2025-07-21T12:00:00',
-    //             end: '2025-07-21T18:00:00',
-    //             backgroundColor: '#89c2ff', // light blue
-    //             borderColor: '#89c2ff',
-    //             textColor: '#000000',
-
-    //             extendedProps: {
-    //                 status: 'Pending',
-    //                 facility: 'Auditorium',
-    //                 org: 'Org 2'
-    //             }
-    //         }
-    //     ];
-    //     setBookings(tempEvents);
-    //     setEvents(tempEvents);
-    // }, []);
     useEffect(() => {
-        const tempEvents = [
-            {
-                title: 'Sample 6-Hour Event',
-                start: '2025-07-20T09:00:00',
-                end: '2025-07-21T15:00:00',
-                backgroundColor: '#ff9f89', // light red
-                borderColor: '#ff9f89',     // light red border
-                textColor: '#000000',       // optional, defaults to white if omitted in timeGrid views
-
-                extendedProps: {
-                    status: 'Approved',
-                    facility: 'Gym',
-                    org: 'Org 1'
-                }
-            },
-            {
-                title: 'Another 6-Hour Event',
-                start: '2025-07-21T12:00:00',
-                end: '2025-07-21T18:00:00',
-                backgroundColor: '#89c2ff', // light blue
-                borderColor: '#89c2ff',
-                textColor: '#000000',
-
-                extendedProps: {
-                    status: 'Pending',
-                    facility: 'Auditorium',
-                    org: 'Org 2'
-                }
-            }
-        ];
         fetch('http://localhost:5000/api/fetch-bookings')
             .then(res => res.json())
             .then(data => {

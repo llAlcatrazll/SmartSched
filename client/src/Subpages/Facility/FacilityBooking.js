@@ -140,7 +140,8 @@ export default function Booking() {
             const data = await response.json();
 
             if (data.success) {
-                const bookingId = data.booking_id; // This MUST come from your backend response!
+                const bookingId = data.id;
+
 
                 // Post each equipment row
                 for (const eq of equipmentRows) {

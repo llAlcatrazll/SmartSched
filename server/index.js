@@ -37,7 +37,7 @@ app.use('/api/delete-booking', deleteBookingRoute);
 app.use('/api/fetch-bookings', fetchBookingRoute);
 app.use('/api/edit-booking', editBookingRoute);
 app.use('/api/fetch-vehicles', fetchVehiclesRoute);
-app.use('/api/vehicle-booking', vehicleBookingRoute);
+app.use('/api/vehicle-booking', fetchVehicleBookingRoute);
 app.use('/api/create-equipment', createequipmentRoute);
 
 app.listen(port, () => {
