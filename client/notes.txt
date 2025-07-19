@@ -1,8 +1,8 @@
 
 
+//speaker, dlp, microphone, extension wire, hdmi cable, 
 
 
-
-
-
-// -- after creating bookings prompt secondary confirmation woul you like to add an equipment then done
+// type select, quantity, 
+//type , quantity, id, booking id, model id, 
+// -- after creating bookings prompt secondary confirmation woul you like to add an equipment then donetetet

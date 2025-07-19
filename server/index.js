@@ -29,6 +29,7 @@ const editBookingRoute = require('./routes/booking/editBooking');
 const fetchVehiclesRoute = require('./routes/booking/fetchVehicles');
 const vehicleBookingRoute = require('./routes/booking/createVehicleBooking');
 const fetchVehicleBookingRoute = require('./routes/booking/fetchVehicleBooking');
+const createequipmentRoute = require('./routes/booking/createequipment');
 
 app.use('/api/login', loginRoute);
 app.use('/api/create-booking', createBookingRoute);
@@ -37,7 +38,7 @@ app.use('/api/fetch-bookings', fetchBookingRoute);
 app.use('/api/edit-booking', editBookingRoute);
 app.use('/api/fetch-vehicles', fetchVehiclesRoute);
 app.use('/api/vehicle-booking', vehicleBookingRoute);
-app.use('/api/vehicle-booking', fetchVehicleBookingRoute);
+app.use('/api/create-equipment', createequipmentRoute);
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);

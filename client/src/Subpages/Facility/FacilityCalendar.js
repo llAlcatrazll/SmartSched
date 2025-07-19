@@ -19,33 +19,122 @@ export default function MyCalendar() {
 
     const statuses = ['All', 'Approved', 'Pending', 'Rejected'];
     const facilities = ['Gym', 'Auditorium', 'Room A'];
-    const orgs = ['Org 1', 'Org 2', 'Org 3'];
+    const orgs = ['Org 1', 'Org 2', 'Org 3']; function renderEventContent(eventInfo) {
+        const bgColor = eventInfo.event.backgroundColor || '#96161C';
+        return (
+            <div
+                className='w-full'
+                style={{
+                    backgroundColor: bgColor,
+                    padding: '2px 4px',
+                    borderRadius: '4px',
+                    color: eventInfo.event.textColor || '#fff',
+                    fontSize: '0.75rem'
+                }}
+            >
+                <b>{eventInfo.timeText && eventInfo.timeText}</b> {eventInfo.event.title}
+            </div>
+        );
+    }
 
+    // useEffect(() => {
+    //     const tempEvents = [
+    //         {
+    //             title: 'Sample 6-Hour Event',
+    //             start: '2025-07-20T09:00:00',
+    //             end: '2025-07-21T15:00:00',
+    //             backgroundColor: '#ff9f89', // light red
+    //             borderColor: '#ff9f89',     // light red border
+    //             textColor: '#000000',       // optional, defaults to white if omitted in timeGrid views
+
+    //             extendedProps: {
+    //                 status: 'Approved',
+    //                 facility: 'Gym',
+    //                 org: 'Org 1'
+    //             }
+    //         },
+    //         {
+    //             title: 'Another 6-Hour Event',
+    //             start: '2025-07-21T12:00:00',
+    //             end: '2025-07-21T18:00:00',
+    //             backgroundColor: '#89c2ff', // light blue
+    //             borderColor: '#89c2ff',
+    //             textColor: '#000000',
+
+    //             extendedProps: {
+    //                 status: 'Pending',
+    //                 facility: 'Auditorium',
+    //                 org: 'Org 2'
+    //             }
+    //         }
+    //     ];
+    //     setBookings(tempEvents);
+    //     setEvents(tempEvents);
+    // }, []);
     useEffect(() => {
-        fetch('/api/fetch-bookings')
+        const tempEvents = [
+            {
+                title: 'Sample 6-Hour Event',
+                start: '2025-07-20T09:00:00',
+                end: '2025-07-21T15:00:00',
+                backgroundColor: '#ff9f89', // light red
+                borderColor: '#ff9f89',     // light red border
+                textColor: '#000000',       // optional, defaults to white if omitted in timeGrid views
+
+                extendedProps: {
+                    status: 'Approved',
+                    facility: 'Gym',
+                    org: 'Org 1'
+                }
+            },
+            {
+                title: 'Another 6-Hour Event',
+                start: '2025-07-21T12:00:00',
+                end: '2025-07-21T18:00:00',
+                backgroundColor: '#89c2ff', // light blue
+                borderColor: '#89c2ff',
+                textColor: '#000000',
+
+                extendedProps: {
+                    status: 'Pending',
+                    facility: 'Auditorium',
+                    org: 'Org 2'
+                }
+            }
+        ];
+        fetch('http://localhost:5000/api/fetch-bookings')
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    console.log('Fetched bookings:', data.bookings); // ✅ See what's coming back
-
-                    const formatted = data.bookings.map(b => ({
-                        title: b.title,
-                        start: b.event_date, // Assuming this is already ISO8601 like '2025-07-17T16:00:00.000Z'
-                        end: b.ending_time ? `${b.event_date.split('T')[0]}T${b.ending_time}` : undefined,
-                        extendedProps: {
-                            status: b.status,
-                            facility: b.facility,
-                            org: b.org
-                        }
-                    }));
-
-                    console.log('Formatted events for FullCalendar:', formatted); // ✅ Confirm conversion worked
-
+                    const formatted = data.bookings.map(b => {
+                        const dateOnly = b.event_date.split('T')[0]; // ensures YYYY-MM-DD only
+                        return {
+                            title: b.event_name || 'Untitled Event',
+                            start: `${dateOnly}T${b.starting_time}`,
+                            end: `${dateOnly}T${b.ending_time}`,
+                            backgroundColor: '#ff9f89', // or make this dynamic
+                            borderColor: '#ff9f89',
+                            textColor: '#000000',
+                            extendedProps: {
+                                status: b.status,
+                                facility: b.event_facility,
+                                org: b.organization
+                            }
+                        };
+                    });
                     setBookings(formatted);
                     setEvents(formatted);
+
+                } else {
+                    console.log('Fetch bookings failed:', data.message || data.error);
                 }
+            })
+            .catch(err => {
+                console.log('Fetch bookings error:', err);
             });
     }, []);
+
+
 
 
     const handleFilterChange = (e) => {
@@ -178,7 +267,13 @@ export default function MyCalendar() {
             </div>
 
             <div className="w-full">
+                <div className="bg-gray-100 border border-gray-300 p-4 rounded-md mb-4">
+                    <h2 className="font-bold text-sm mb-2">Fetched Bookings (Raw Preview)</h2>
+                    <pre className="text-xs overflow-x-auto max-h-[200px]">{JSON.stringify(bookings, null, 2)}</pre>
+                </div>
+
                 <FullCalendar
+                    eventColor="#96161C"
                     plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                     headerToolbar={{
                         start: 'prev,next today',
@@ -189,7 +284,9 @@ export default function MyCalendar() {
                     editable={true}
                     selectable={true}
                     events={events}
+                    eventContent={renderEventContent}
                 />
+
             </div>
         </div>
     );

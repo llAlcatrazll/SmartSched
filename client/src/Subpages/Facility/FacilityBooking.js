@@ -18,7 +18,9 @@ export default function Booking() {
     const [filtered, setFiltered] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
-    const [showEquipment, setshowEquipment] = useState(false);
+    const [equipmentRows, setEquipmentRows] = useState([]);
+
+    // const [showEquipment, setshowEquipment] = useState(false);
     const [form, setForm] = useState({
         title: '',
         facility: '',
@@ -111,7 +113,7 @@ export default function Booking() {
 
     const handleFilterChange = e => setFilter({ ...filter, [e.target.name]: e.target.value });
 
-    const handleSubmit = async e => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             const url = editingId
@@ -136,7 +138,23 @@ export default function Booking() {
             });
 
             const data = await response.json();
+
             if (data.success) {
+                const bookingId = data.booking_id; // This MUST come from your backend response!
+
+                // Post each equipment row
+                for (const eq of equipmentRows) {
+                    await fetch('http://localhost:5000/api/create-equipment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            type: eq.type,
+                            quantity: eq.quantity,
+                            booking_id: bookingId
+                        })
+                    });
+                }
+
                 alert(editingId ? 'Booking updated successfully' : 'Booking created successfully');
                 fetch('http://localhost:5000/api/fetch-bookings')
                     .then(res => res.json())
@@ -155,6 +173,7 @@ export default function Booking() {
                     org: '',
                     contact: ''
                 });
+                setEquipmentRows([]);
                 setEditingId(null);
                 setShowForm(false);
             } else {
@@ -165,6 +184,7 @@ export default function Booking() {
             alert('Server error');
         }
     };
+
 
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this booking?')) return;
@@ -352,29 +372,88 @@ export default function Booking() {
                                         type="text"
                                         name="contact"
                                         value={form.contact}
-                                        onChange={handleChange}
-                                        placeholder="+63 9xx xxx xxxx"
+                                        onChange={(e) => {
+                                            let input = e.target.value.replace(/\D/g, ''); // Remove all non-digits
+                                            if (input.length <= 11) {
+                                                setForm(prev => ({ ...prev, contact: input }));
+                                            }
+                                        }}
+                                        placeholder="09XXXXXXXXX"
+                                        pattern="^09\d{9}$"
                                         className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]"
                                         required
                                     />
+
+
                                 </div>
                                 <div>
                                     <button
-                                        type="submit"
+                                        type="button"
+                                        onClick={() => {
+                                            if (equipmentRows.length < 5) {
+                                                setEquipmentRows([...equipmentRows, { type: '', quantity: '' }]);
+                                            }
+                                        }}
                                         className="bg-[#96161C] text-white px-8 py-2 rounded-lg font-semibold hover:bg-[#7a1217] transition"
                                     >
                                         Add Equipment +
                                     </button>
+                                    {equipmentRows.map((row, index) => (
+                                        <div key={index} className="flex gap-4 items-center my-2">
+                                            <div className="flex-1">
+                                                <label className="block text-sm font-medium mb-1">Equipment Type</label>
+                                                <select
+                                                    value={row.type}
+                                                    onChange={(e) => {
+                                                        const updated = [...equipmentRows];
+                                                        updated[index].type = e.target.value;
+                                                        setEquipmentRows(updated);
+                                                    }}
+                                                    className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]"
+                                                    required
+                                                >
+                                                    <option value="">Select Equipment</option>
+                                                    <option value="Speaker">Speaker</option>
+                                                    <option value="DLP">DLP</option>
+                                                    <option value="Microphone">Microphone</option>
+                                                    <option value="Extension Wire">Extension Wire</option>
+                                                    <option value="HDMI Cable">HDMI Cable</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="flex-1">
+                                                <label className="block text-sm font-medium mb-1">Quantity</label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={row.quantity}
+                                                    onChange={(e) => {
+                                                        const updated = [...equipmentRows];
+                                                        updated[index].quantity = e.target.value;
+                                                        setEquipmentRows(updated);
+                                                    }}
+                                                    className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const updated = equipmentRows.filter((_, i) => i !== index);
+                                                    setEquipmentRows(updated);
+                                                }}
+                                                className="text-red-600 hover:text-red-800 text-lg font-bold"
+                                                title="Remove"
+                                            >
+                                                &times;
+                                            </button>
+                                        </div>
+                                    ))}
+
+
                                 </div>
 
-                            </div>
-                            <div className='mt-5'>
-                                <select className='w-1/3 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C] '>
-                                    <option value="someOption">DLP</option>
-                                    <option value="someOption">Projector</option>
-                                    <option value="someOption">Microphone</option>
-                                    <option value="someOption">Speaker</option>
-                                </select>
                             </div>
                         </div>
                         {/* Actions */}
