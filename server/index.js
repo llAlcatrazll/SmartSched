@@ -22,23 +22,31 @@ app.get('/api/test', async (req, res) => {
 });
 
 const loginRoute = require('./routes/account/login');
+const fetchUserRoute = require('./routes/account/fetchUserDetails');
+// 
 const createBookingRoute = require('./routes/booking/createBooking');
 const deleteBookingRoute = require('./routes/booking/deleteBooking');
 const fetchBookingRoute = require('./routes/booking/fetchBooking');
 const editBookingRoute = require('./routes/booking/editBooking');
-const fetchVehiclesRoute = require('./routes/booking/fetchVehicles');
+// const fetchVehiclesRoute = require('./routes/booking/fetchVehicles');
 const vehicleBookingRoute = require('./routes/booking/createVehicleBooking');
 const fetchVehicleBookingRoute = require('./routes/booking/fetchVehicleBooking');
 const createequipmentRoute = require('./routes/booking/createequipment');
 
 app.use('/api/login', loginRoute);
+app.use('/api/fetch-user', fetchUserRoute);
+// CREATE
 app.use('/api/create-booking', createBookingRoute);
-app.use('/api/delete-booking', deleteBookingRoute);
-app.use('/api/fetch-bookings', fetchBookingRoute);
-app.use('/api/edit-booking', editBookingRoute);
-app.use('/api/fetch-vehicles', fetchVehiclesRoute);
-app.use('/api/vehicle-booking', fetchVehicleBookingRoute);
+app.use('/api/vehicle-booking', vehicleBookingRoute);
 app.use('/api/create-equipment', createequipmentRoute);
+// UPDATE
+// DELETE
+app.use('/api/delete-booking', deleteBookingRoute);
+// FETCH
+app.use('/api/fetch-bookings', fetchBookingRoute);
+app.use('/api/fetch-vehicles', fetchVehicleBookingRoute);
+// EDIT
+app.use('/api/edit-booking', editBookingRoute);
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);

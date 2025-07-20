@@ -15,7 +15,7 @@ export default function VehicleBookingCalendar() {
     const [bookings, setBookings] = useState([]);
     const [events, setEvents] = useState([]);
 
-    const vehicleTypes = ['All', 'Car', 'Van', 'Bus'];
+    const vehicleTypes = ['All', 'isuzu', 'hi-ace', 'kia', 'small-bus', 'big-bus', 'tamaraw', 'hilux', 'innova-manual', 'innova-automatic',];
     const departments = ['All', 'AGSO', 'IT', 'Finance']; // You can update this list from DB if needed
 
     const renderEventContent = (eventInfo) => {
@@ -36,7 +36,7 @@ export default function VehicleBookingCalendar() {
     };
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/vehicle-booking')
+        fetch('http://localhost:5000/api/fetch-vehicles')
             .then(res => res.json())
             .then(data => {
                 const formatted = data.map(b => ({
@@ -100,6 +100,7 @@ export default function VehicleBookingCalendar() {
                         <label className="block text-xs font-semibold mb-1 text-[#96161C]">Search (Requestor/Purpose)</label>
                         <input
                             type="text"
+                            placeholder='Juan dela Cruz'
                             name="search"
                             value={filter.search}
                             onChange={handleFilterChange}

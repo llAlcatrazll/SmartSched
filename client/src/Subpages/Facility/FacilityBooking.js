@@ -112,7 +112,7 @@ export default function Booking() {
     const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
     const handleFilterChange = e => setFilter({ ...filter, [e.target.name]: e.target.value });
-
+    const currentUserId = localStorage.getItem('currentUserId');
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -133,9 +133,11 @@ export default function Booking() {
                     event_facility: form.facility,
                     requested_by: form.requestedBy,
                     organization: form.org,
-                    contact: form.contact
+                    contact: form.contact,
+                    creator_id: currentUserId // <- pass your logged-in user's ID
                 })
             });
+
 
             const data = await response.json();
 
@@ -627,10 +629,12 @@ export default function Booking() {
                                 paginated.map((b, idx) => (
                                     <tr
                                         key={b.id || idx}
-                                        className={`transition hover:bg-[#f8eaea] ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                                    >
+                                        className={`transition hover:bg-[#f8eaea] ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                                        {/*  */}
                                         <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#96161C]">{b.event_name || b.title}</td>
+                                        {/*  */}
                                         <td className="px-6 py-4 whitespace-nowrap">{b.event_facility || b.facility || '-'}</td>
+                                        {/*  */}
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {new Date(b.event_date || b.date).toLocaleDateString('en-US', {
                                                 year: 'numeric',

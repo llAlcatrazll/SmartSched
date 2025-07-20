@@ -6,3 +6,24 @@
 // type select, quantity, 
 //type , quantity, id, booking id, model id, 
 // -- after creating bookings prompt secondary confirmation woul you like to add an equipment then donetetet
+
+    case ISUZU = 'isuzu';
+    case HIACE = 'hi-ace';
+    case KIA = 'kia';
+    case SMALLBUS = 'small bus';
+    case BIGBUS = 'big bus';
+    case TAMARAW = 'tamaraw';
+    case HILUX = 'hilux';
+    case INNOVAMANUAL = 'innovamaunal';
+    case INNOVAATUOMATIC = 'innovaautomatic';
+
+
+    Isuzu
+    Hi-Ace
+    Kia
+    Small Bus   
+    Big Bus
+    Tamaraw
+    Hilux
+    Innova Manual
+    Innova Automatic

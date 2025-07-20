@@ -1,34 +1,35 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { User, Mail, Phone, Building, CalendarDays, Filter } from 'lucide-react';
 
-// Dummy user and bookings data for demo
-const user = {
-    name: 'Juan De la Cruz',
-    email: 'juan.delacruz@email.com',
-    contact: '+63 912 345 6789',
-    org: 'AGSO',
-};
-
-const bookings = [
-    {
-        id: 1,
-        title: 'Room 101',
-        facility: 'Main Building',
-        date: '2025-07-16',
-        time: '10:00 AM - 12:00 PM',
-        status: 'Approved',
-    },
-    {
-        id: 2,
-        title: 'Gym',
-        facility: 'Sports Complex',
-        date: '2025-07-18',
-        time: '2:00 PM - 4:00 PM',
-        status: 'Pending',
-    },
-];
-
 export default function Profile() {
+    const [user, setUser] = useState(null);
+    const [bookings, setBookings] = useState([]);
+
+    useEffect(() => {
+        const userId = Number(localStorage.getItem('currentUserId'));
+        if (!userId) return;
+
+        // Fetch User Details
+        fetch(`http://localhost:5000/api/fetch-user/${userId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setUser(data.user);
+                }
+            });
+
+        // Fetch Bookings for this user
+        fetch('http://localhost:5000/api/fetch-bookings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const userBookings = data.bookings.filter(b => b.creator_id === userId);
+                    setBookings(userBookings);
+                }
+            });
+    }, []);
+
+
     return (
         <div className="flex flex-col md:flex-row gap-8 w-full max-w-7xl mx-auto">
             {/* Left: Profile Card */}
@@ -37,19 +38,19 @@ export default function Profile() {
                     <div className="bg-[#96161C] rounded-full p-3 mb-3">
                         <User className="text-white w-14 h-14" />
                     </div>
-                    <h1 className="text-xl font-bold mb-1 text-center">{user.name}</h1>
+                    <h1 className="text-xl font-bold mb-1 text-center">{user?.name || 'Loading...'}</h1>
                     <div className="flex flex-col items-center gap-1 text-gray-700 text-sm">
                         <div className="flex items-center gap-2">
                             <Mail className="w-4 h-4 text-[#96161C]" />
-                            <span>{user.email}</span>
+                            <span>{user?.email || '-'}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Phone className="w-4 h-4 text-[#96161C]" />
-                            <span>{user.contact}</span>
+                            <span>{user?.contact || '-'}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Building className="w-4 h-4 text-[#96161C]" />
-                            <span>{user.org}</span>
+                            <span>{user?.affiliation || '-'}</span>
                         </div>
                     </div>
                 </div>
@@ -71,7 +72,7 @@ export default function Profile() {
                 </div>
             </div>
 
-            {/* Center: Bookings (wider) */}
+            {/* Center: Bookings */}
             <div className="md:w-3/5 w-full">
                 <div className="bg-white rounded-xl shadow-md p-6">
                     <h2 className="text-xl font-bold mb-4 text-[#96161C] flex items-center gap-2">
@@ -97,10 +98,12 @@ export default function Profile() {
                                             key={b.id}
                                             className={`transition hover:bg-[#f8eaea] ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                                         >
-                                            <td className="px-4 py-2 font-semibold text-[#96161C]">{b.title}</td>
-                                            <td className="px-4 py-2">{b.facility}</td>
-                                            <td className="px-4 py-2">{b.date}</td>
-                                            <td className="px-4 py-2">{b.time}</td>
+                                            <td className="px-4 py-2 font-semibold text-[#96161C]">{b.event_name}</td>
+                                            <td className="px-4 py-2">{b.event_facility}</td>
+                                            <td className="px-4 py-2">{b.event_date}</td>
+                                            <td className="px-4 py-2">
+                                                {b.starting_time} - {b.ending_time}
+                                            </td>
                                             <td className="px-4 py-2">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-bold shadow
                                                     ${b.status === 'Approved'

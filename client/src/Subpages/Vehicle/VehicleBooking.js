@@ -59,7 +59,7 @@ export default function VehicleBooking() {
     useEffect(() => {
         const fetchBookings = async () => {
             try {
-                const res = await fetch('http://localhost:5000/api/vehicle-booking');
+                const res = await fetch('http://localhost:5000/api/fetch-vehicles');
                 const data = await res.json();
                 setBookings(data);
             } catch (error) {
@@ -123,9 +123,15 @@ export default function VehicleBooking() {
                                     required
                                 >
                                     <option value="">Select...</option>
-                                    <option value="Car">Car</option>
-                                    <option value="Van">Van</option>
-                                    <option value="Bus">Bus</option>
+                                    <option value="isuzu">Isuzu</option>
+                                    <option value="hi-ace">Hi-Ace</option>
+                                    <option value="kia">Kia</option>
+                                    <option value="small-bus">Small Bus</option>
+                                    <option value="big-bus">Big Bus</option>
+                                    <option value="tamaraw">Tamaraw</option>
+                                    <option value="hilux">Hilux</option>
+                                    <option value="innova-manual">Innova Manual</option>
+                                    <option value="innova-automatic">Innova Automatic</option>
                                 </select>
                             </div>
                             <div>
@@ -279,7 +285,11 @@ export default function VehicleBooking() {
                                     <td className="px-6 py-4">{b.vehicleType}</td>
                                     <td className="px-6 py-4">{b.requestor}</td>
                                     <td className="px-6 py-4">{b.department}</td>
-                                    <td className="px-6 py-4">{b.date}</td>
+                                    <td className="px-6 py-4">             {new Date(b.event_date || b.date).toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: '2-digit',
+                                    })}</td>
                                     <td className="px-6 py-4">{b.purpose}</td>
                                     <td className="px-6 py-4 flex gap-2 justify-end">
                                         <button onClick={() => handleEdit(index)} className="text-[#96161C] hover:text-[#7a1217]">Edit</button>
