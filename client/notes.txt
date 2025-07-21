@@ -1,29 +1,118 @@
+==========================
+VENUES, VEHICLES, EQUIPMENT LIST
+==========================
+
+-------------------------------------
+🛖 VENUE LIST (Example Venues / Rooms)
+-------------------------------------
+
+Gymnasium
+N-116
+M-116
+P-102
+P-103
+P-104
+Auditorium
+Conference Room A
+Conference Room B
+Library Room 2nd Floor
+Computer Laboratory 1
+Computer Laboratory 2
+Physics Laboratory
+Chemistry Laboratory
+Biology Laboratory
+Speech Laboratory
+Audio-Visual Room
+Faculty Lounge
+Student Center
+Covered Court
+Quadrangle
+Registrar Office Meeting Room
+Boardroom
+Clinic Conference Room
 
 
-//speaker, dlp, microphone, extension wire, hdmi cable, 
+-------------------------------------
+🚐 VEHICLE LIST (For Vehicle Booking)
+-------------------------------------
+
+Isuzu
+Hi-Ace
+Kia
+Small Bus
+Big Bus
+Tamaraw
+Hilux
+Innova Manual
+Innova Automatic
 
 
-// type select, quantity, 
-//type , quantity, id, booking id, model id, 
-// -- after creating bookings prompt secondary confirmation woul you like to add an equipment then donetetet
-
-    case ISUZU = 'isuzu';
-    case HIACE = 'hi-ace';
-    case KIA = 'kia';
-    case SMALLBUS = 'small bus';
-    case BIGBUS = 'big bus';
-    case TAMARAW = 'tamaraw';
-    case HILUX = 'hilux';
-    case INNOVAMANUAL = 'innovamaunal';
-    case INNOVAATUOMATIC = 'innovaautomatic';
+-- ENUM KEY SUGGESTIONS (if applicable):
+isuzu
+hi-ace
+kia
+small-bus
+big-bus
+tamaraw
+hilux
+innova-manual
+innova-automatic
 
 
-    Isuzu
-    Hi-Ace
-    Kia
-    Small Bus   
-    Big Bus
-    Tamaraw
-    Hilux
-    Innova Manual
-    Innova Automatic
+-------------------------------------
+🔌 EQUIPMENT LIST (For Equipment Booking)
+-------------------------------------
+
+Speaker
+DLP Projector
+Microphone
+Extension Wire
+HDMI Cable
+Whiteboard
+Marker Set
+Laser Pointer
+Clicker / Presentation Remote
+Monitor (TV or LED Display)
+Laptop
+Printer
+Router / WiFi Device
+Camera (DSLR / Mirrorless)
+Tripod
+Extension Cord with Multiple Outlets
+Portable Sound System
+Projector Screen
+Microphone Stand
+Webcam
+Headset
+Conference Phone
+
+
+==========================
+BOOKING WORKFLOW SUGGESTION
+==========================
+
+1️⃣ Facility / Venue Booking Flow:
+- Choose Facility (from Venue List)
+- Select Date / Time
+- Input Purpose / Description
+- Input Requestor Info
+- Submit Booking
+- Prompt: "Would you like to add any Equipment?"
+    - If Yes, proceed to Equipment Selection
+    - If No, Booking Completed
+
+2️⃣ Vehicle Booking Flow:
+- Choose Vehicle (from Vehicle List)
+- Select Date / Time
+- Input Destination, Purpose, Requestor
+- Submit Booking
+
+3️⃣ Equipment Booking Flow:
+- Choose Equipment (from Equipment List)
+- Specify Quantity
+- Link to an existing Facility / Vehicle Booking
+- Submit
+
+==========================
+END OF FILE
+==========================
