@@ -1,4 +1,3 @@
-// server/index.js
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
@@ -14,7 +13,6 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 
-// Example route
 app.get('/api/test', async (req, res) => {
     const result = await pool.query('SELECT NOW()');
     res.json(result.rows[0]);
@@ -32,6 +30,7 @@ const editBookingRoute = require('./routes/booking/editBooking');
 const vehicleBookingRoute = require('./routes/booking/createVehicleBooking');
 const fetchVehicleBookingRoute = require('./routes/booking/fetchVehicleBooking');
 const createequipmentRoute = require('./routes/booking/createequipment');
+const updateBookingStatusRoute = require('./routes/booking/updateBookingStatus');
 
 app.use('/api/login', loginRoute);
 app.use('/api/fetch-user', fetchUserRoute);
@@ -40,6 +39,7 @@ app.use('/api/create-booking', createBookingRoute);
 app.use('/api/vehicle-booking', vehicleBookingRoute);
 app.use('/api/create-equipment', createequipmentRoute);
 // UPDATE
+app.use('/api/update-booking-status', updateBookingStatusRoute);
 // DELETE
 app.use('/api/delete-booking', deleteBookingRoute);
 // FETCH

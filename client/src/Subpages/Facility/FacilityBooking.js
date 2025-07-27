@@ -19,6 +19,30 @@ export default function Booking() {
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [equipmentRows, setEquipmentRows] = useState([]);
+    const [editStatusIndex, setEditStatusIndex] = useState(null);
+    const handleStatusClick = (index) => {
+        setEditStatusIndex(index);
+    };
+
+    const handleStatusChange = (index, newStatus, bookingId) => {
+        // Update locally
+        const updated = [...bookings];
+        updated[index].status = newStatus;
+        setBookings(updated);
+        setEditStatusIndex(null);
+
+        // Update to backend
+        fetch(`http://localhost:5000/api/update-booking-status/${bookingId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus }),
+        }).then((res) => res.json())
+            .then((data) => {
+                if (!data.success) {
+                    alert('Failed to update status');
+                }
+            });
+    };
 
     // const [showEquipment, setshowEquipment] = useState(false);
     const [form, setForm] = useState({
@@ -651,17 +675,37 @@ export default function Booking() {
                                         <td className="px-6 py-4 whitespace-nowrap">{b.requested_by || b.requestedBy || '-'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">{b.organization || b.org || '-'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">{b.contact || '-'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold shadow
-                                                ${b.status === 'Approved'
-                                                    ? 'bg-green-100 text-green-700 border border-green-300'
-                                                    : b.status === 'Pending'
-                                                        ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                                                        : 'bg-red-100 text-red-700 border border-red-300'
-                                                }`}>
-                                                {b.status || 'Pending'}
-                                            </span>
+                                        <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleStatusClick(idx)}>
+                                            {editStatusIndex === idx ? (
+                                                <select
+                                                    value={b.status}
+                                                    onChange={(e) => handleStatusChange(idx, e.target.value, b.id)}
+                                                    onBlur={() => setEditStatusIndex(null)}
+                                                    autoFocus
+                                                    className="text-xs px-3 py-1 border rounded-full"
+                                                >
+                                                    <option value="Approved">Approved</option>
+                                                    <option value="Pending">Pending</option>
+                                                    <option value="Declined">Declined</option>
+                                                    <option value="Rescheduled">Rescheduled</option>
+                                                </select>
+                                            ) : (
+                                                <span
+                                                    className={`px-3 py-1 rounded-full text-xs font-bold shadow
+                ${b.status === 'Approved'
+                                                            ? 'bg-green-100 text-green-700 border border-green-300'
+                                                            : b.status === 'Pending'
+                                                                ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                                                                : b.status === 'Declined'
+                                                                    ? 'bg-red-100 text-red-700 border border-red-300'
+                                                                    : 'bg-blue-100 text-blue-700 border border-blue-300'
+                                                        }`}
+                                                >
+                                                    {b.status || 'Pending'}
+                                                </span>
+                                            )}
                                         </td>
+
                                         <td className="px-6 py-4 whitespace-nowrap text-right flex gap-2 justify-end">
                                             <button
                                                 onClick={() => handleEdit(b)}

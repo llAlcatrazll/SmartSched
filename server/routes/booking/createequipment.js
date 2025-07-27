@@ -6,7 +6,6 @@ const pool = new Pool({
     connectionString: process.env.DATABASE_URL
 });
 
-// Corrected Equipment Route
 router.post('/', async (req, res) => {
     const { type, quantity, booking_id } = req.body;
     try {
