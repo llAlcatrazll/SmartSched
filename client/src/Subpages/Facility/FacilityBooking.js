@@ -20,6 +20,16 @@ export default function Booking() {
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [equipmentRows, setEquipmentRows] = useState([]);
     const [editStatusIndex, setEditStatusIndex] = useState(null);
+    const [showFacilityBreakdown, setShowFacilityBreakdown] = useState(false);
+    const [user, setUser] = useState(null);
+    const [userId, setUserId] = useState(null);
+
+    useEffect(() => {
+        const storedRole = localStorage.getItem('currentUserRole');
+        if (storedRole === 'admin') {
+            setShowFacilityBreakdown(true);
+        }
+    }, []);
     const handleStatusClick = (index) => {
         setEditStatusIndex(index);
     };
@@ -69,20 +79,52 @@ export default function Booking() {
     });
 
     // Fetch bookings from backend
+    // useEffect(() => {
+    //     fetch('http://localhost:5000/api/fetch-bookings')
+    //         .then(res => res.json())
+    //         .then(data => {
+    //             if (data.success) {
+    //                 setBookings(data.bookings);
+    //             } else {
+    //                 console.log('Fetch bookings failed:', data.message || data.error);
+    //             }
+    //         })
+    //         .catch(err => {
+    //             console.log('Fetch bookings error:', err);
+    //         });
+    // }, []);
     useEffect(() => {
+        const storedUserId = localStorage.getItem('currentUserId');
+        const storedUserRole = localStorage.getItem('currentUserRole');
+
+        if (storedUserId && storedUserRole) {
+            setUser({ id: parseInt(storedUserId), role: storedUserRole });
+            setUserId(parseInt(storedUserId));
+        }
+    }, []);
+    useEffect(() => {
+        if (!user || !userId) return;
+
         fetch('http://localhost:5000/api/fetch-bookings')
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    setBookings(data.bookings);
-                } else {
+                if (!data.success) {
                     console.log('Fetch bookings failed:', data.message || data.error);
+                    return;
+                }
+
+                if (user.role === 'admin') {
+                    setBookings(data.bookings);
+                } else if (user.role === 'user') {
+                    const userBookings = data.bookings.filter(b => b.creator_id === userId);
+                    setBookings(userBookings);
                 }
             })
             .catch(err => {
                 console.log('Fetch bookings error:', err);
             });
-    }, []);
+    }, [user, userId]);
+
 
     // Filtering logic
     useEffect(() => {
@@ -637,9 +679,9 @@ export default function Booking() {
                                 <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
                                     Status
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tr-xl">
+                                {showFacilityBreakdown && (<th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tr-xl">
                                     Actions
-                                </th>
+                                </th>)}
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-100">
@@ -706,7 +748,7 @@ export default function Booking() {
                                             )}
                                         </td>
 
-                                        <td className="px-6 py-4 whitespace-nowrap text-right flex gap-2 justify-end">
+                                        {showFacilityBreakdown && (<td className="px-6 py-4 whitespace-nowrap text-right flex gap-2 justify-end">
                                             <button
                                                 onClick={() => handleEdit(b)}
                                                 className="text-[#96161C] hover:text-[#7a1217] transition"
@@ -726,7 +768,7 @@ export default function Booking() {
                                                     <path d="M9 3v1H4v2h16V4h-5V3H9zm1 5v12h2V8h-2zm4 0v12h2V8h-2z" />
                                                 </svg>
                                             </button>
-                                        </td>
+                                        </td>)}
 
 
                                     </tr>

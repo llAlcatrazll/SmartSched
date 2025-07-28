@@ -20,10 +20,14 @@ function Login() {
             const data = await response.json();
             if (data.success) {
                 const userId = data.user.id;
-                localStorage.setItem('currentUserId', userId); // store ID globally for later
+                const userRole = data.user.role;
+
+                localStorage.setItem('currentUserId', userId);
+                localStorage.setItem('currentUserRole', userRole); // ✅ store the role
 
                 navigate('/landing');
-            } else {
+            }
+            else {
                 setError(data.message || 'Login failed');
             }
         } catch (err) {

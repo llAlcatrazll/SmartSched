@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Menu,
     X,
@@ -27,6 +27,13 @@ export default function LandingPage() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isFacilityOpen, setIsFacilityOpen] = useState(true);
     const [isVehicleOpen, setIsVehicleOpen] = useState(true);
+    const [showFacilityBreakdown, setShowFacilityBreakdown] = useState(false);
+    useEffect(() => {
+        const storedRole = localStorage.getItem('currentUserRole');
+        if (storedRole === 'admin') {
+            setShowFacilityBreakdown(true);
+        }
+    }, []);
 
     // 🟢 This retrieves from localStorage so it remembers on reload.
     const [activePage, setActivePage] = useState(() => {
@@ -71,6 +78,7 @@ export default function LandingPage() {
                     <h1 className="text-2xl font-bold mb-4">Settings</h1>
                     <p>This is the Settings page.</p>
                 </div>
+
             );
             break;
         default:
@@ -112,9 +120,9 @@ export default function LandingPage() {
                 </div>
 
                 <nav className="flex flex-col gap-4 text-white">
-                    <SidebarItem icon={<Home size={20} />} label="Dashboard" open={isSidebarOpen} onClick={() => handleSetActivePage('dashboard')} />
+                    {showFacilityBreakdown && (<SidebarItem icon={<Home size={20} />} label="Dashboard" open={isSidebarOpen} onClick={() => handleSetActivePage('dashboard')} />)}
                     <SidebarItem icon={<User size={20} />} label="Profile" open={isSidebarOpen} onClick={() => handleSetActivePage('profile')} />
-                    <SidebarItem icon={<Settings size={20} />} label="Settings" open={isSidebarOpen} onClick={() => handleSetActivePage('settings')} />
+                    {showFacilityBreakdown && (<SidebarItem icon={<Settings size={20} />} label="Settings" open={isSidebarOpen} onClick={() => handleSetActivePage('settings')} />)}
 
                     {isSidebarOpen && (
                         <>
@@ -128,7 +136,14 @@ export default function LandingPage() {
                                 <>
                                     <SidebarItem icon={<Calendar size={20} />} label="Facility Calendar" open={isSidebarOpen} onClick={() => handleSetActivePage('calendar')} />
                                     <SidebarItem icon={<ClipboardList size={20} />} label="Facility Bookings" open={isSidebarOpen} onClick={() => handleSetActivePage('booking')} />
-                                    <SidebarItem icon={<ClipboardList size={20} />} label="Facility Breakdown" open={isSidebarOpen} onClick={() => handleSetActivePage('facility-breakdown')} />
+                                    {showFacilityBreakdown && (
+                                        <SidebarItem
+                                            icon={<ClipboardList size={20} />}
+                                            label="Facility Breakdown"
+                                            open={isSidebarOpen}
+                                            onClick={() => handleSetActivePage('facility-breakdown')}
+                                        />
+                                    )}
                                 </>
                             )}
                         </>
@@ -146,7 +161,10 @@ export default function LandingPage() {
                                 <>
                                     <SidebarItem icon={<Calendar size={20} />} label="Vehicle Calendar" open={isSidebarOpen} onClick={() => handleSetActivePage('vehicle-calendar')} />
                                     <SidebarItem icon={<ClipboardList size={20} />} label="Vehicle Bookings" open={isSidebarOpen} onClick={() => handleSetActivePage('vehicle-booking')} />
-                                    <SidebarItem icon={<ClipboardList size={20} />} label="Vehicle Breakdown" open={isSidebarOpen} onClick={() => handleSetActivePage('vehicle-breakdown')} />
+                                    {showFacilityBreakdown && (
+                                        <SidebarItem icon={<ClipboardList size={20} />} label="Vehicle Breakdown" open={isSidebarOpen} onClick={() => handleSetActivePage('vehicle-breakdown')} />
+                                    )}
+
                                 </>
                             )}
                         </>
