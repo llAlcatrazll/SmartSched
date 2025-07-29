@@ -122,7 +122,7 @@ export default function LandingPage() {
                 <nav className="flex flex-col gap-4 text-white">
                     {showFacilityBreakdown && (<SidebarItem icon={<Home size={20} />} label="Dashboard" open={isSidebarOpen} onClick={() => handleSetActivePage('dashboard')} />)}
                     <SidebarItem icon={<User size={20} />} label="Profile" open={isSidebarOpen} onClick={() => handleSetActivePage('profile')} />
-                    {showFacilityBreakdown && (<SidebarItem icon={<Settings size={20} />} label="Settings" open={isSidebarOpen} onClick={() => handleSetActivePage('settings')} />)}
+                    {/* {showFacilityBreakdown && (<SidebarItem icon={<Settings size={20} />} label="Settings" open={isSidebarOpen} onClick={() => handleSetActivePage('settings')} />)} */}
 
                     {isSidebarOpen && (
                         <>

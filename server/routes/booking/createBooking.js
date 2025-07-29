@@ -23,7 +23,7 @@ router.post('/', async (req, res) => {
         const result = await pool.query(
             `INSERT INTO "Booking" 
             (event_date, starting_time, ending_time, event_name, event_facility, requested_by, organization, contact, creator_id, status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,'pending')
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,'    ')
             RETURNING id`,
             [event_date, starting_time, ending_time, event_name, event_facility, requested_by, organization, contact, creator_id]
         );

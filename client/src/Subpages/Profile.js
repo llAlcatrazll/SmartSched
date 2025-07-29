@@ -205,7 +205,7 @@ export default function Profile() {
                         </button>
                     </div>
                 </div>
-                <div className="bg-white rounded-xl shadow p-4">
+                {/* <div className="bg-white rounded-xl shadow p-4">
                     <div className="font-semibold text-[#96161C] mb-2">Quick Links</div>
                     <ul className="text-sm text-gray-700 space-y-2">
                         <li className="flex items-center gap-2">
@@ -218,7 +218,7 @@ export default function Profile() {
                             <span>📅</span> Calendar
                         </li>
                     </ul>
-                </div>
+                </div> */}
             </div>
         </div>
     );

@@ -42,16 +42,20 @@ export default function Booking() {
         setEditStatusIndex(null);
 
         // Update to backend
-        fetch(`http://localhost:5000/api/update-booking-status/${bookingId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus }),
-        }).then((res) => res.json())
-            .then((data) => {
-                if (!data.success) {
-                    alert('Failed to update status');
-                }
-            });
+        try {
+            fetch(`http://localhost:5000/api/update-booking-status/${bookingId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus }),
+            }).then((res) => res.json())
+                .then((data) => {
+                    if (!data.success) {
+                        alert('Failed to update status');
+                    }
+                });
+        } catch (err) {
+            console.log(err)
+        }
     };
 
     // const [showEquipment, setshowEquipment] = useState(false);
@@ -172,7 +176,7 @@ export default function Booking() {
     // Unique values for dropdowns
     const facilities = Array.from(new Set(bookings.map(b => b.event_facility || b.facility || '').filter(Boolean)));
     const orgs = Array.from(new Set(bookings.map(b => b.organization || b.org || '').filter(Boolean)));
-    const statuses = ['All', 'approved', 'pending', 'rejected'];
+    const statuses = ['All', 'approved', 'pending', 'declined', 'rescheduled'];
     const [editingId, setEditingId] = useState(null);
 
     const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
@@ -258,9 +262,10 @@ export default function Booking() {
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this booking?')) return;
 
+
         try {
             const res = await fetch(`/api/delete-booking/${id}`, {
-                method: 'PATCH'
+                method: 'PUT'
             });
             const data = await res.json();
 
@@ -726,21 +731,25 @@ export default function Booking() {
                                                     autoFocus
                                                     className="text-xs px-3 py-1 border rounded-full"
                                                 >
+                                                    <option value="">Option</option>
                                                     <option value="Approved">Approved</option>
                                                     <option value="Pending">Pending</option>
                                                     <option value="Declined">Declined</option>
                                                     <option value="Rescheduled">Rescheduled</option>
+                                                    <option value="tesdt">tesdt</option>
+                                                    {/* <option value="Done">Done</option> */}
                                                 </select>
                                             ) : (
                                                 <span
                                                     className={`px-3 py-1 rounded-full text-xs font-bold shadow
-                ${b.status === 'Approved'
+                                                            ${b.status === 'Approved'
                                                             ? 'bg-green-100 text-green-700 border border-green-300'
-                                                            : b.status === 'Pending'
+                                                            : b.status === 'pending'
                                                                 ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                                                                : b.status === 'Declined'
+                                                                : b.status === 'declined'
                                                                     ? 'bg-red-100 text-red-700 border border-red-300'
-                                                                    : 'bg-blue-100 text-blue-700 border border-blue-300'
+                                                                    : b.status === 'completed' ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                                                        : 'bg-blue-100 text-blue-700 border border-blue-300'
                                                         }`}
                                                 >
                                                     {b.status || 'Pending'}

@@ -1,118 +1,64 @@
-==========================
-VENUES, VEHICLES, EQUIPMENT LIST
-==========================
-
--------------------------------------
-🛖 VENUE LIST (Example Venues / Rooms)
--------------------------------------
-
-Gymnasium
-N-116
-M-116
-P-102
-P-103
-P-104
-Auditorium
-Conference Room A
-Conference Room B
-Library Room 2nd Floor
-Computer Laboratory 1
-Computer Laboratory 2
-Physics Laboratory
-Chemistry Laboratory
-Biology Laboratory
-Speech Laboratory
-Audio-Visual Room
-Faculty Lounge
-Student Center
-Covered Court
-Quadrangle
-Registrar Office Meeting Room
-Boardroom
-Clinic Conference Room
 
 
--------------------------------------
-🚐 VEHICLE LIST (For Vehicle Booking)
--------------------------------------
+//speaker, dlp, microphone, extension wire, hdmi cable, 
 
-Isuzu
-Hi-Ace
-Kia
-Small Bus
-Big Bus
-Tamaraw
-Hilux
-Innova Manual
-Innova Automatic
+// --STATUS--
+    pending   -yellow
+    declined  -red
+    approved  -green
+    rescheduled - orange
+    completed -blue
 
 
--- ENUM KEY SUGGESTIONS (if applicable):
-isuzu
-hi-ace
-kia
-small-bus
-big-bus
-tamaraw
-hilux
-innova-manual
-innova-automatic
+
+// type select, quantity, 
+//type , quantity, id, booking id, model id, 
+// -- after creating bookings prompt secondary confirmation woul you like to add an equipment then donetetet
+
+    case ISUZU = 'isuzu';
+    case HIACE = 'hi-ace';
+    case KIA = 'kia';
+    case SMALLBUS = 'small bus';
+    case BIGBUS = 'big bus';
+    case TAMARAW = 'tamaraw';
+    case HILUX = 'hilux';
+    case INNOVAMANUAL = 'innovamaunal';
+    case INNOVAATUOMATIC = 'innovaautomatic';
 
 
--------------------------------------
-🔌 EQUIPMENT LIST (For Equipment Booking)
--------------------------------------
-
-Speaker
-DLP Projector
-Microphone
-Extension Wire
-HDMI Cable
-Whiteboard
-Marker Set
-Laser Pointer
-Clicker / Presentation Remote
-Monitor (TV or LED Display)
-Laptop
-Printer
-Router / WiFi Device
-Camera (DSLR / Mirrorless)
-Tripod
-Extension Cord with Multiple Outlets
-Portable Sound System
-Projector Screen
-Microphone Stand
-Webcam
-Headset
-Conference Phone
+    Isuzu
+    Hi-Ace
+    Kia
+    Small Bus   
+    Big Bus
+    Tamaraw
+    Hilux
+    Innova Manual
+    Innova Automatic
 
 
-==========================
-BOOKING WORKFLOW SUGGESTION
-==========================
+    Proper Date booking and limitation
+    colored enum for STATUS
+    personal color on calendar
 
-1️⃣ Facility / Venue Booking Flow:
-- Choose Facility (from Venue List)
-- Select Date / Time
-- Input Purpose / Description
-- Input Requestor Info
-- Submit Booking
-- Prompt: "Would you like to add any Equipment?"
-    - If Yes, proceed to Equipment Selection
-    - If No, Booking Completed
 
-2️⃣ Vehicle Booking Flow:
-- Choose Vehicle (from Vehicle List)
-- Select Date / Time
-- Input Destination, Purpose, Requestor
-- Submit Booking
+    To fix
+        show only on calendar approved and pending while pending has yellow color
+        Limit quantity on equipment booking
+        show equipment booking on edit
+        STATUS COLORS
+        FORMAT STATUS DROP DOWN CHANGE
+        CALENDAR FILTERS
+        BOOKING FORM ROOM AND NAMES FORMAT SUGGESTION (TO PREVENT MISTYPE)
 
-3️⃣ Equipment Booking Flow:
-- Choose Equipment (from Equipment List)
-- Specify Quantity
-- Link to an existing Facility / Vehicle Booking
-- Submit
+        Create Booking Hydration and Dehydration
+        Edit facility bookings
+        have edit in profile
+        live dashboard
+        finish profile filter
+        finish advanced booking parameter system for no conflicts
 
-==========================
-END OF FILE
-==========================
+        working sidebar profile
+
+    To Add  
+        User management page

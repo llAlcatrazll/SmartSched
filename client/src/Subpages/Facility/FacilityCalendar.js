@@ -202,10 +202,10 @@ export default function MyCalendar() {
             </div>
 
             <div className="w-full">
-                <div className="bg-gray-100 border border-gray-300 p-4 rounded-md mb-4">
+                {/* <div className="bg-gray-100 border border-gray-300 p-4 rounded-md mb-4">
                     <h2 className="font-bold text-sm mb-2">Fetched Bookings (Raw Preview)</h2>
                     <pre className="text-xs overflow-x-auto max-h-[200px]">{JSON.stringify(bookings, null, 2)}</pre>
-                </div>
+                </div> */}
 
                 <FullCalendar
                     eventColor="#96161C"
