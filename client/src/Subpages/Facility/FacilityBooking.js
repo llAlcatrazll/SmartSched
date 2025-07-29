@@ -144,7 +144,7 @@ export default function Booking() {
 
         // Status filter
         if (filter.status !== 'All') {
-            result = result.filter(b => (b.status || 'Pending') === filter.status);
+            result = result.filter(b => (b.status || 'pending') === filter.status);
         }
 
         // Facility filter
@@ -172,7 +172,7 @@ export default function Booking() {
     // Unique values for dropdowns
     const facilities = Array.from(new Set(bookings.map(b => b.event_facility || b.facility || '').filter(Boolean)));
     const orgs = Array.from(new Set(bookings.map(b => b.organization || b.org || '').filter(Boolean)));
-    const statuses = ['All', 'Approved', 'Pending', 'Rejected'];
+    const statuses = ['All', 'approved', 'pending', 'rejected'];
     const [editingId, setEditingId] = useState(null);
 
     const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });

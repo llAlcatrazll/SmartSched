@@ -175,3 +175,184 @@ export default function Dashboard() {
         </div>
     );
 }
+
+
+// import React, { useEffect, useState } from 'react';
+// import {
+//     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+//     BarChart, Bar, PieChart, Pie, Cell
+// } from 'recharts';
+
+// const CAMPAIGN_COLORS = ['#34d399', '#fbbf24', '#ef4444'];
+
+// export default function Dashboard() {
+//     const [statusCounts, setStatusCounts] = useState({
+//         Approved: 0,
+//         Pending: 0,
+//         Disapproved: 0,
+//     });
+//     const [monthlyBookings, setMonthlyBookings] = useState([]);
+//     const [collegeBookings, setCollegeBookings] = useState([]);
+//     const [recentFacilityTransactions, setRecentFacilityTransactions] = useState([]);
+//     const [recentVehicleTransactions, setRecentVehicleTransactions] = useState([]);
+
+//     useEffect(() => {
+//         fetch('/api/dashboard/status-counts')
+//             .then(res => res.json())
+//             .then(data => {
+//                 const counts = { Approved: 0, Pending: 0, Disapproved: 0 };
+//                 data.forEach(item => {
+//                     counts[item.status] = parseInt(item.count, 10);
+//                 });
+//                 setStatusCounts(counts);
+//             })
+//             .catch(err => console.error('Failed to fetch status counts:', err));
+
+//         fetch('/api/dashboard/monthly-bookings')
+//             .then(res => res.json())
+//             .then(data => setMonthlyBookings(data))
+//             .catch(err => console.error('Failed to fetch monthly bookings:', err));
+
+//         fetch('/api/dashboard/college-bookings')
+//             .then(res => res.json())
+//             .then(data => setCollegeBookings(data))
+//             .catch(err => console.error('Failed to fetch college bookings:', err));
+
+//         fetch('/api/dashboard/recent-facility-transactions')
+//             .then(res => res.json())
+//             .then(data => setRecentFacilityTransactions(data))
+//             .catch(err => console.error('Failed to fetch facility bookings:', err));
+
+//         fetch('/api/dashboard/recent-vehicle-transactions')
+//             .then(res => res.json())
+//             .then(data => setRecentVehicleTransactions(data))
+//             .catch(err => console.error('Failed to fetch vehicle bookings:', err));
+//     }, []);
+
+//     const campaignData = [
+//         { name: 'Approved', value: statusCounts.Approved },
+//         { name: 'Pending', value: statusCounts.Pending },
+//         { name: 'Disapproved', value: statusCounts.Disapproved },
+//     ];
+
+//     const renderTransactionsTable = (transactions) => (
+//         <div>
+//             <div className="hidden md:grid grid-cols-4 font-semibold text-gray-600 text-xs pb-2 border-b">
+//                 <div>Booked By</div>
+//                 <div>Resource</div>
+//                 <div>Date</div>
+//                 <div>Status</div>
+//             </div>
+//             {transactions.map((t, i) => (
+//                 <div
+//                     key={i}
+//                     className={`grid grid-cols-1 md:grid-cols-4 items-center py-3 border-b last:border-b-0
+//                         ${i % 2 === 0 ? 'bg-white md:bg-transparent' : 'bg-gray-100 md:bg-transparent'}`}
+//                 >
+//                     <div className="md:col-span-1">
+//                         <span className="font-medium text-gray-800">{t.user}</span>
+//                         <span className="block md:hidden text-gray-500 text-xs">{t.resource}</span>
+//                     </div>
+//                     <div className="hidden md:block md:col-span-1 text-gray-500">{t.resource}</div>
+//                     <div className="md:col-span-1 text-gray-700 text-sm">{t.date}</div>
+//                     <div className="md:col-span-1">
+//                         <span
+//                             className={`inline-block px-3 py-1 rounded-full text-xs font-bold
+//                                 ${t.status === 'Approved'
+//                                     ? 'bg-green-100 text-green-700'
+//                                     : t.status === 'Pending'
+//                                         ? 'bg-yellow-100 text-yellow-700'
+//                                         : 'bg-red-100 text-red-700 border border-[#96161C]'}`
+//                             }
+//                         >
+//                             {t.status}
+//                         </span>
+//                     </div>
+//                 </div>
+//             ))}
+//         </div>
+//     );
+
+//     return (
+//         <div className="bg-white min-h-screen p-6">
+//             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+//                 <div>
+//                     <h1 className="text-3xl font-bold text-[#96161C]">DASHBOARD</h1>
+//                     <p className="text-green-600 mt-1">Welcome to your dashboard</p>
+//                 </div>
+//                 <button className="bg-[#96161C] hover:bg-red-700 text-white px-4 py-2 rounded font-semibold mt-4 md:mt-0 shadow-lg border-b-4 border-[#ffb3b3] transition">
+//                     DOWNLOAD REPORTS
+//                 </button>
+//             </div>
+
+//             {/* Top Row */}
+//             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+//                 {/* Booking Status Pie */}
+//                 <div className="bg-gray-50 rounded-lg p-4 shadow flex flex-col items-center border-t-4 border-[#96161C]">
+//                     <div className="font-bold text-gray-800 mb-2">Booking Status</div>
+//                     <ResponsiveContainer width="100%" height={180}>
+//                         <PieChart>
+//                             <Pie
+//                                 data={campaignData}
+//                                 cx="50%"
+//                                 cy="50%"
+//                                 innerRadius={50}
+//                                 outerRadius={70}
+//                                 paddingAngle={5}
+//                                 dataKey="value"
+//                                 label={({ name, percent }) =>
+//                                     `${name} (${(percent * 100).toFixed(0)}%)`
+//                                 }
+//                             >
+//                                 {campaignData.map((entry, index) => (
+//                                     <Cell key={index} fill={CAMPAIGN_COLORS[index % CAMPAIGN_COLORS.length]} />
+//                                 ))}
+//                             </Pie>
+//                         </PieChart>
+//                     </ResponsiveContainer>
+//                 </div>
+
+//                 {/* Bookings Per Month */}
+//                 <div className="bg-gray-50 rounded-lg p-4 shadow flex flex-col items-center border-t-4 border-[#96161C]">
+//                     <div className="font-bold text-gray-800 mb-2">Bookings Per Month</div>
+//                     <ResponsiveContainer width="100%" height={180}>
+//                         <BarChart data={monthlyBookings}>
+//                             <CartesianGrid strokeDasharray="3 3" />
+//                             <XAxis dataKey="month" />
+//                             <YAxis />
+//                             <Tooltip />
+//                             <Bar dataKey="bookings" fill="#6366f1" />
+//                         </BarChart>
+//                     </ResponsiveContainer>
+//                 </div>
+
+//                 {/* Bookings Per College */}
+//                 <div className="bg-gray-50 rounded-lg p-4 shadow border-t-4 border-[#96161C]">
+//                     <div className="font-bold text-gray-800 mb-2">Bookings Per College</div>
+//                     <ResponsiveContainer width="100%" height={180}>
+//                         <LineChart data={collegeBookings}>
+//                             <CartesianGrid strokeDasharray="3 3" />
+//                             <XAxis dataKey="college" />
+//                             <YAxis />
+//                             <Tooltip />
+//                             <Legend />
+//                             <Line type="monotone" dataKey="bookings" stroke="#96161C" strokeWidth={3} dot={{ r: 6, fill: "#96161C" }} />
+//                         </LineChart>
+//                     </ResponsiveContainer>
+//                 </div>
+//             </div>
+
+//             {/* Recent Facility Bookings */}
+//             <div className="bg-gray-50 rounded-lg p-4 shadow mb-6 border-l-4 border-[#96161C]">
+//                 <div className="font-bold text-gray-800 mb-2">Recent Facility Bookings</div>
+//                 {renderTransactionsTable(recentFacilityTransactions)}
+//             </div>
+
+//             {/* Recent Vehicle Bookings */}
+//             <div className="bg-gray-50 rounded-lg p-4 shadow mb-6 border-l-4 border-[#96161C]">
+//                 <div className="font-bold text-gray-800 mb-2">Recent Vehicle Bookings</div>
+//                 {renderTransactionsTable(recentVehicleTransactions)}
+//             </div>
+//         </div>
+//     );
+// }

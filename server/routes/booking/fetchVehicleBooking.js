@@ -9,10 +9,7 @@ const pool = new Pool({
 
 router.get('/', async (req, res) => {
     try {
-        const result = await pool.query(`
-            SELECT id, "vehicle_Type" AS "vehicleType", requestor, department, date, purpose
-            FROM "VehicleBooking"
-            ORDER BY date DESC
+        const result = await pool.query(` SELECT * FROM "VehicleBooking" ORDER BY date DESC
         `);
         res.json(result.rows);
     } catch (err) {
@@ -20,5 +17,6 @@ router.get('/', async (req, res) => {
         res.status(500).json({ message: 'Server error fetching vehicle bookings' });
     }
 });
+
 
 module.exports = router;

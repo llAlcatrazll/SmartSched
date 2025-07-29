@@ -20,13 +20,17 @@ export default function VehicleBooking() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        const currentUserId = localStorage.getItem('currentUserId'); // ⬅️ get user ID
+
         const newBooking = {
             vehicleType: form.vehicleType,
             requestor: form.requestor,
             department: form.department,
             date: form.date,
             purpose: form.purpose,
+            booker_id: Number(currentUserId), // ⬅️ include this
         };
+
 
         try {
             const res = await fetch('http://localhost:5000/api/vehicle-booking', {

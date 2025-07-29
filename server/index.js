@@ -31,6 +31,9 @@ const vehicleBookingRoute = require('./routes/booking/createVehicleBooking');
 const fetchVehicleBookingRoute = require('./routes/booking/fetchVehicleBooking');
 const createequipmentRoute = require('./routes/booking/createequipment');
 const updateBookingStatusRoute = require('./routes/booking/updateBookingStatus');
+// dashboard
+const statusCountsRoute = require('./routes/dashboard/statusCounts');
+
 
 app.use('/api/login', loginRoute);
 app.use('/api/fetch-user', fetchUserRoute);
@@ -47,6 +50,13 @@ app.use('/api/fetch-bookings', fetchBookingRoute);
 app.use('/api/fetch-vehicles', fetchVehicleBookingRoute);
 // EDIT
 app.use('/api/edit-booking', editBookingRoute);
+// DASHBOARD    
+app.use('/api/dashboard/status-counts', statusCountsRoute);
+app.use('/api/dashboard/status-counts', require('./routes/dashboard/statusCounts'));
+app.use('/api/dashboard/monthly-bookings', require('./routes/dashboard/monthlyBookings'));
+app.use('/api/dashboard/college-bookings', require('./routes/dashboard/collegeBookings'));
+app.use('/api/dashboard/recent-facility-transactions', require('./routes/dashboard/recentFacilityTransactions'));
+app.use('/api/dashboard/recent-vehicle-transactions', require('./routes/dashboard/recentVehicleTransactions'));
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
