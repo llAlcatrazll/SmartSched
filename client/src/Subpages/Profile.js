@@ -33,9 +33,13 @@ export default function Profile() {
         fetch('http://localhost:5000/api/fetch-vehicles')
             .then(res => res.json())
             .then(data => {
-                const userVehicleBookings = data.filter(v => v.booker_id === userId);
+                const userId = Number(localStorage.getItem('currentUserId'));
+                const userVehicleBookings = data.filter(
+                    v => v.booker_id === userId && !v.deleted
+                );
                 setVehicleBookings(userVehicleBookings);
             });
+
 
 
     }, []);
@@ -84,7 +88,7 @@ export default function Profile() {
             </div>
 
             {/* Center: Bookings */}
-            <div className="md:w-3/5 w-full">
+            <div className="md:w-11/12 w-full">
                 <div className="bg-white rounded-xl shadow-md p-6">
                     <h2 className="text-xl font-bold mb-4 text-[#96161C] flex items-center gap-2">
                         <CalendarDays className="w-6 h-6" /> My Bookings

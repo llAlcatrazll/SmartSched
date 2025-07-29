@@ -11,14 +11,15 @@ router.post('/', async (req, res) => {
     const { vehicleType, requestor, department, date, purpose } = req.body;
 
     try {
-        const { vehicleType, requestor, department, date, purpose, booker_id } = req.body;
+        const { vehicleType, requestor, department, date, purpose, booker_id, deleted } = req.body;
 
         await pool.query(
             `INSERT INTO "VehicleBooking" 
-    ("vehicle_Type", requestor, department, date, purpose, booker_id)
-    VALUES ($1, $2, $3, $4, $5, $6)`,
-            [vehicleType, requestor, department, date, purpose, booker_id]
+    ("vehicle_Type", requestor, department, date, purpose, booker_id, deleted)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [vehicleType, requestor, department, date, purpose, booker_id, false]
         );
+
         res.json({ success: true, message: 'Vehicle booking created successfully' });
     } catch (err) {
         console.error('Create vehicle booking error:', err);

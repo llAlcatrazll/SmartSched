@@ -57,6 +57,8 @@ app.use('/api/dashboard/monthly-bookings', require('./routes/dashboard/monthlyBo
 app.use('/api/dashboard/college-bookings', require('./routes/dashboard/collegeBookings'));
 app.use('/api/dashboard/recent-facility-transactions', require('./routes/dashboard/recentFacilityTransactions'));
 app.use('/api/dashboard/recent-vehicle-transactions', require('./routes/dashboard/recentVehicleTransactions'));
+const deleteVehicleBooking = require('./routes/booking/deleteVehicleBooking');
+app.use('/api/vehicle/delete', deleteVehicleBooking);
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);

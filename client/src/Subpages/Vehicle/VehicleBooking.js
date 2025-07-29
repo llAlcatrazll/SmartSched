@@ -65,11 +65,13 @@ export default function VehicleBooking() {
             try {
                 const res = await fetch('http://localhost:5000/api/fetch-vehicles');
                 const data = await res.json();
-                setBookings(data);
+                const nonDeleted = data.filter(b => !b.deleted); // ← ignore deleted
+                setBookings(nonDeleted);
             } catch (error) {
                 console.error('Error fetching bookings:', error);
             }
         };
+
 
         fetchBookings();
     }, []);
@@ -91,9 +93,32 @@ export default function VehicleBooking() {
         setFilter({ ...filter, [e.target.name]: e.target.value });
     };
 
-    const handleDelete = (index) => {
+    // const handleDelete = (index) => {
+    //     if (!window.confirm('Delete this vehicle booking?')) return;
+    //     setBookings(bookings.filter((_, i) => i !== index));
+    // };
+    const handleDelete = async (index) => {
         if (!window.confirm('Delete this vehicle booking?')) return;
-        setBookings(bookings.filter((_, i) => i !== index));
+
+        const booking = bookings[index];
+
+        try {
+            const res = await fetch(`http://localhost:5000/api/vehicle/delete/${booking.id}`, {
+                method: 'PUT',
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                const updated = bookings.filter((_, i) => i !== index);
+                setBookings(updated);
+            } else {
+                alert(data.message || 'Failed to delete booking');
+            }
+        } catch (error) {
+            console.error('Error deleting booking:', error);
+            alert('Server error, could not delete booking.');
+        }
     };
 
     return (
@@ -286,7 +311,7 @@ export default function VehicleBooking() {
                                 (filter.dateTo === '' || b.date <= filter.dateTo)
                             ).map((b, index) => (
                                 <tr key={index} className="hover:bg-gray-50 transition">
-                                    <td className="px-6 py-4">{b.vehicleType}</td>
+                                    <td className="px-6 py-4">{b.vehicle_Type}</td>
                                     <td className="px-6 py-4">{b.requestor}</td>
                                     <td className="px-6 py-4">{b.department}</td>
                                     <td className="px-6 py-4">             {new Date(b.event_date || b.date).toLocaleDateString('en-US', {
@@ -295,10 +320,21 @@ export default function VehicleBooking() {
                                         day: '2-digit',
                                     })}</td>
                                     <td className="px-6 py-4">{b.purpose}</td>
-                                    <td className="px-6 py-4 flex gap-2 justify-end">
-                                        <button onClick={() => handleEdit(index)} className="text-[#96161C] hover:text-[#7a1217]">Edit</button>
-                                        <button onClick={() => handleDelete(index)} className="text-red-600 hover:text-red-800">Delete</button>
+                                    <td className="px-1 py-2 flex gap-2">
+                                        <button
+                                            onClick={() => handleEdit(index)}
+                                            className="px-4 py-1 text-sm font-semibold rounded-full border border-[#96161C] text-[#96161C] hover:bg-[#f8eaea] transition"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(index)}
+                                            className="px-4 py-1 text-sm font-semibold rounded-full border border-red-600 text-red-600 hover:bg-red-100 transition"
+                                        >
+                                            Delete
+                                        </button>
                                     </td>
+
                                 </tr>
                             ))
                         )}
