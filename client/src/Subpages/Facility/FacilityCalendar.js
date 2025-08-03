@@ -18,7 +18,7 @@ export default function MyCalendar() {
     const [events, setEvents] = useState([]);
 
     const statuses = ['All', 'Approved', 'Pending', 'Rejected'];
-    const facilities = ['Gym', 'Auditorium', 'Room A'];
+    const facilities = ['Gym', 'Auditorium', 'Room A', 'Pending Test', 'Pending Test 2'];
     const orgs = ['Org 1', 'Org 2', 'Org 3']; function renderEventContent(eventInfo) {
         const bgColor = eventInfo.event.backgroundColor || '#96161C';
         return (
@@ -107,6 +107,8 @@ export default function MyCalendar() {
         }
         setEvents(filtered);
     }, [filter, bookings]);
+    // Unique values for dropdowns
+    // const facilities = Array.from(new Set(bookings.map(b => b.event_facility || b.facility || '').filter(Boolean)));
 
     return (
         <div className="flex flex-col gap-4">
@@ -165,7 +167,7 @@ export default function MyCalendar() {
                         </select>
                     </div>
                     <div className="flex-1 min-w-[120px] max-w-xs">
-                        <label className="block text-xs font-semibold mb-1 text-[#96161C]">Date From</label>
+                        <label className="block text-xs font-semibold mb-1 text-[#96161C]">Date     From</label>
                         <input
                             type="date"
                             name="dateFrom"

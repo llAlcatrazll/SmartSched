@@ -15,8 +15,8 @@ import CalendarPage from '../Subpages/Facility/FacilityCalendar';
 import Booking from '../Subpages/Facility/FacilityBooking';
 import VehicleBooking from '../Subpages/Vehicle/VehicleBooking';
 import VehicleCalendar from '../Subpages/Vehicle/VehicleCalendar';
+import UserManagement from '../Subpages/UserManagement';
 
-// Add your user info here
 const user = {
     name: 'Andre Narval',
     role: 'ADMINISTRATOR',
@@ -35,7 +35,6 @@ export default function LandingPage() {
         }
     }, []);
 
-    // 🟢 This retrieves from localStorage so it remembers on reload.
     const [activePage, setActivePage] = useState(() => {
         return localStorage.getItem('activePage') || 'dashboard';
     });
@@ -46,7 +45,6 @@ export default function LandingPage() {
         window.location.href = '/';
     };
 
-    // 🟢 Helper to store selected page in localStorage
     const handleSetActivePage = (page) => {
         setActivePage(page);
         localStorage.setItem('activePage', page);
@@ -59,6 +57,9 @@ export default function LandingPage() {
             break;
         case 'profile':
             RenderedPage = <Profile />;
+            break;
+        case 'user-management':
+            RenderedPage = <UserManagement />;
             break;
         case 'calendar':
             RenderedPage = <CalendarPage />;
@@ -122,6 +123,7 @@ export default function LandingPage() {
                 <nav className="flex flex-col gap-4 text-white">
                     {showFacilityBreakdown && (<SidebarItem icon={<Home size={20} />} label="Dashboard" open={isSidebarOpen} onClick={() => handleSetActivePage('dashboard')} />)}
                     <SidebarItem icon={<User size={20} />} label="Profile" open={isSidebarOpen} onClick={() => handleSetActivePage('profile')} />
+                    <SidebarItem icon={<User size={20} />} label="User Management" open={isSidebarOpen} onClick={() => handleSetActivePage('user-management')} />
                     {/* {showFacilityBreakdown && (<SidebarItem icon={<Settings size={20} />} label="Settings" open={isSidebarOpen} onClick={() => handleSetActivePage('settings')} />)} */}
 
                     {isSidebarOpen && (

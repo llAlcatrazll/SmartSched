@@ -34,6 +34,18 @@ const fetchVehicleBookingRoute = require('./routes/booking/fetchVehicleBooking')
 const updateBookingStatusRoute = require('./routes/booking/updateBookingStatus');
 // dashboard
 const statusCountsRoute = require('./routes/dashboard/statusCounts');
+// user
+const createUserRoute = require('./routes/account/createUser');
+const deleteUserRoute = require('./routes/account/deleteUser');
+const fetchAllUserRoute = require('./routes/account/fetchUser');
+const updateUserRoute = require('./routes/account/updateUser');
+
+// USER
+app.use('/api/create-user', createUserRoute);
+app.use('/api/delete-user', deleteUserRoute);
+app.use('/api/fetchAll-user', fetchAllUserRoute);
+app.use('/api/update-user', updateUserRoute);
+
 
 
 app.use('/api/login', loginRoute);
