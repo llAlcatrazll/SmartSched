@@ -16,6 +16,7 @@ import Booking from '../Subpages/Facility/FacilityBooking';
 import VehicleBooking from '../Subpages/Vehicle/VehicleBooking';
 import VehicleCalendar from '../Subpages/Vehicle/VehicleCalendar';
 import UserManagement from '../Subpages/UserManagement';
+import ManageEquipment from '../Subpages/ManageEquipment';
 
 const user = {
     name: 'Andre Narval',
@@ -72,6 +73,9 @@ export default function LandingPage() {
             break;
         case 'vehicle-booking':
             RenderedPage = <VehicleBooking />;
+            break;
+        case 'manage-equipment':
+            RenderedPage = <ManageEquipment />;
             break;
         case 'settings':
             RenderedPage = (
@@ -138,14 +142,15 @@ export default function LandingPage() {
                                 <>
                                     <SidebarItem icon={<Calendar size={20} />} label="Facility Calendar" open={isSidebarOpen} onClick={() => handleSetActivePage('calendar')} />
                                     <SidebarItem icon={<ClipboardList size={20} />} label="Facility Bookings" open={isSidebarOpen} onClick={() => handleSetActivePage('booking')} />
-                                    {showFacilityBreakdown && (
+                                    <SidebarItem icon={<Calendar size={20} />} label="Manage Equipment" open={isSidebarOpen} onClick={() => handleSetActivePage('manage-equipment')} />
+                                    {/* {showFacilityBreakdown && (
                                         <SidebarItem
                                             icon={<ClipboardList size={20} />}
                                             label="Facility Breakdown"
                                             open={isSidebarOpen}
                                             onClick={() => handleSetActivePage('facility-breakdown')}
                                         />
-                                    )}
+                                    )} */}
                                 </>
                             )}
                         </>
@@ -163,9 +168,9 @@ export default function LandingPage() {
                                 <>
                                     <SidebarItem icon={<Calendar size={20} />} label="Vehicle Calendar" open={isSidebarOpen} onClick={() => handleSetActivePage('vehicle-calendar')} />
                                     <SidebarItem icon={<ClipboardList size={20} />} label="Vehicle Bookings" open={isSidebarOpen} onClick={() => handleSetActivePage('vehicle-booking')} />
-                                    {showFacilityBreakdown && (
+                                    {/* {showFacilityBreakdown && (
                                         <SidebarItem icon={<ClipboardList size={20} />} label="Vehicle Breakdown" open={isSidebarOpen} onClick={() => handleSetActivePage('vehicle-breakdown')} />
-                                    )}
+                                    )} */}
 
                                 </>
                             )}

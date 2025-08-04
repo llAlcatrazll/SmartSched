@@ -350,6 +350,34 @@ export default function Booking() {
         if (page >= 1 && page <= totalPages) setCurrentPage(page);
     };
 
+
+    function getTomorrowDate() {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return tomorrow.toISOString().split('T')[0];
+    }
+
+    function calculateMinEndTime(startTime) {
+        if (!startTime) return "06:00";
+
+        const [hour, minute] = startTime.split(':').map(Number);
+        const endHour = hour + 1;
+        const resultHour = endHour < 10 ? `0${endHour}` : `${endHour}`;
+        return `${resultHour}:${minute.toString().padStart(2, '0')}`;
+    }
+    function clearForm() {
+        setForm({
+            title: '',
+            facility: '',
+            date: '',
+            startTime: '',
+            endTime: '',
+            requestedBy: '',
+            org: '',
+            contact: ''
+        });
+    }
+
     return (
         <div className="w-full">
             {/* Collapsible Create Booking */}
@@ -386,7 +414,9 @@ export default function Booking() {
                                         onChange={handleChange}
                                         className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]"
                                         required
+                                        min={getTomorrowDate()}
                                     />
+
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">Starting time*</label>
@@ -397,8 +427,11 @@ export default function Booking() {
                                         onChange={handleChange}
                                         className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]"
                                         required
+                                        min="06:00"
+                                        max="22:00"
                                     />
                                 </div>
+
                                 <div>
                                     <label className="block text-sm font-medium mb-1">Ending time*</label>
                                     <input
@@ -408,8 +441,12 @@ export default function Booking() {
                                         onChange={handleChange}
                                         className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]"
                                         required
+                                        disabled={!form.startTime}
+                                        min={calculateMinEndTime(form.startTime)}
+                                        max="22:00"
                                     />
                                 </div>
+
                             </div>
                         </div>
                         {/* Event and Venue */}
@@ -569,7 +606,13 @@ export default function Booking() {
                             >
                                 {editingId ? 'Save' : 'Create'}
                             </button>
-
+                            <button
+                                type="submit"
+                                className="bg-[#727272] text-white px-8 py-2 rounded-lg font-semibold hover:bg-[#d4d4d4] transition"
+                                onClick={() => clearForm()}
+                            >
+                                Clear
+                            </button>
                             <button
                                 type="button"
                                 className="bg-gray-200 text-gray-800 px-8 py-2 rounded-lg font-semibold hover:bg-gray-300 transition"
@@ -618,6 +661,7 @@ export default function Booking() {
                                     {statuses.map(s => (
                                         <option key={s} value={s}>{s}</option>
                                     ))}
+
                                 </select>
                             </div>
                             <div className="flex-1 min-w-[140px] max-w-xs">
@@ -703,7 +747,7 @@ export default function Booking() {
                 {/* Table Header */}
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-[#96161C]">
+                        <thead className="bg-[#96161C] position-sticky z-10 top-0">
                             <tr>
                                 <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider rounded-tl-xl">
                                     Event
@@ -714,7 +758,7 @@ export default function Booking() {
                                 <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
                                     Date
                                 </th>
-                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
+                                <th className="px-2 py-3 text-sm font-bold text-white uppercase tracking-wider text-center">
                                     Time
                                 </th>
                                 <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
@@ -741,7 +785,6 @@ export default function Booking() {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-100" >
-                            {/* style={{ fontSize: '14px' }} */}
                             {paginated.length === 0 ? (
                                 <tr>
                                     <td colSpan={8} className="text-center py-8 text-gray-500">
@@ -766,7 +809,7 @@ export default function Booking() {
                                             })}
                                         </td>
 
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        <td className="px-6 py-4 whitespace-nowrap text-center">
                                             {(b.starting_time && b.ending_time)
                                                 ? `${formatTime(b.starting_time)} - ${formatTime(b.ending_time)}`
                                                 : b.time}
@@ -805,7 +848,6 @@ export default function Booking() {
                                                     <option value="Pending">Pending</option>
                                                     <option value="Declined">Declined</option>
                                                     <option value="Rescheduled">Rescheduled</option>
-                                                    <option value="tesdt">tesdt</option>
                                                     {/* <option value="Done">Done</option> */}
                                                 </select>
                                             ) : (
