@@ -39,6 +39,8 @@ const createUserRoute = require('./routes/account/createUser');
 const deleteUserRoute = require('./routes/account/deleteUser');
 const fetchAllUserRoute = require('./routes/account/fetchUser');
 const updateUserRoute = require('./routes/account/updateUser');
+// equipment
+const fetchAllBookingEquipment = require('./routes/booking/fetchBookingEquipment');
 
 // USER
 app.use('/api/create-user', createUserRoute);
@@ -61,6 +63,7 @@ app.use('/api/delete-booking', deleteBookingRoute);
 // FETCH
 app.use('/api/fetch-bookings', fetchBookingRoute);
 app.use('/api/fetch-vehicles', fetchVehicleBookingRoute);
+app.use('/api/fetch-booking-equipment', fetchAllBookingEquipment);
 // EDIT
 app.use('/api/edit-booking', editBookingRoute);
 // DASHBOARD    

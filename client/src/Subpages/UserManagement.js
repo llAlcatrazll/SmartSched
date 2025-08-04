@@ -123,11 +123,11 @@ export default function UserManagement() {
                 <table className="min-w-full table-auto">
                     <thead className="bg-[#96161C] text-white text-left">
                         <tr>
-                            <th className="px-4 py-2">Name</th>
+                            <th className="px-4 py-2 rounded-tl-xl">Name</th>
                             <th className="px-4 py-2">Email</th>
                             <th className="px-4 py-2">Affiliation</th>
                             <th className="px-4 py-2">Role</th>
-                            <th className="px-4 py-2 text-right">Actions</th>
+                            <th className="px-4 py-2 text-right rounded-tr-xl">Actions</th>
                         </tr>
                     </thead>
                     <tbody>

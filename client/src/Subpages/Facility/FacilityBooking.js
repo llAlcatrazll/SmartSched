@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 
 function formatTime(timeStr) {
     if (!timeStr) return '';
@@ -23,6 +23,8 @@ export default function Booking() {
     const [showFacilityBreakdown, setShowFacilityBreakdown] = useState(false);
     const [user, setUser] = useState(null);
     const [userId, setUserId] = useState(null);
+    const [showRequesterInfo, setShowRequesterInfo] = useState(false);
+    const [equipmentMap, setEquipmentMap] = useState({});
 
     useEffect(() => {
         const storedRole = localStorage.getItem('currentUserRole');
@@ -35,13 +37,12 @@ export default function Booking() {
     };
 
     const handleStatusChange = (index, newStatus, bookingId) => {
-        // Update locally
+        // -> EDIT AND SAVE THE BOOKING
         const updated = [...bookings];
         updated[index].status = newStatus;
         setBookings(updated);
         setEditStatusIndex(null);
 
-        // Update to backend
         try {
             fetch(`http://localhost:5000/api/update-booking-status/${bookingId}`, {
                 method: 'POST',
@@ -57,6 +58,26 @@ export default function Booking() {
             console.log(err)
         }
     };
+
+    const fetchEquipmentForBooking = async (bookingId) => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/fetch-booking-equipment?booking_id=${bookingId}`);
+            const data = await res.json();
+
+            if (data.success) {
+                setEquipmentMap(prev => ({
+                    ...prev,
+                    [bookingId]: data.equipment,
+                }));
+            }
+        } catch (err) {
+            console.error(`Error fetching equipment for booking ${bookingId}:`, err);
+        }
+    };
+
+
+
+
 
     // const [showEquipment, setshowEquipment] = useState(false);
     const [form, setForm] = useState({
@@ -117,17 +138,26 @@ export default function Booking() {
                     return;
                 }
 
+                let visibleBookings = [];
+
                 if (user.role === 'admin') {
-                    setBookings(data.bookings);
+                    visibleBookings = data.bookings;
                 } else if (user.role === 'user') {
-                    const userBookings = data.bookings.filter(b => b.creator_id === userId);
-                    setBookings(userBookings);
+                    visibleBookings = data.bookings.filter(b => b.creator_id === userId);
                 }
+
+                setBookings(visibleBookings);
+
+                // Fetch equipment for each visible booking
+                visibleBookings.forEach(b => {
+                    fetchEquipmentForBooking(b.id);
+                });
             })
             .catch(err => {
                 console.log('Fetch bookings error:', err);
             });
     }, [user, userId]);
+
 
 
     // Filtering logic
@@ -500,6 +530,7 @@ export default function Booking() {
                                                 <input
                                                     type="number"
                                                     min="1"
+                                                    max="5"// MAX VALUE
                                                     value={row.quantity}
                                                     onChange={(e) => {
                                                         const updated = [...equipmentRows];
@@ -651,7 +682,21 @@ export default function Booking() {
                             >
                                 Reset
                             </button>
+
                         </div>
+                        <div className="flex items-center gap-2 mb-4">
+                            <input
+                                type="checkbox"
+                                checked={showRequesterInfo}
+                                onChange={() => setShowRequesterInfo(prev => !prev)}
+                                id="toggle-requester"
+                                className="accent-[#96161C]"
+                            />
+                            <label htmlFor="toggle-requester" className="text-sm text-[#96161C] font-medium">
+                                Show Requested By & Contact
+                            </label>
+                        </div>
+
                     </div>
                 </div>
 
@@ -660,28 +705,34 @@ export default function Booking() {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-[#96161C]">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tl-xl">
+                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider rounded-tl-xl">
                                     Event
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
                                     Facility
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
                                     Date
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
                                     Time
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
-                                    Requested By
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
                                     Org/Dept
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
-                                    Contact
+                                <th className="px-6 py-2 text-left text-sm font-bold text-white uppercase tracking-wider" >
+                                    Equipment
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                                {showRequesterInfo && (
+                                    <>
+                                        <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
+                                            Requested By
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
+                                            Contact
+                                        </th>
+                                    </>)}
+                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
                                     Status
                                 </th>
                                 {showFacilityBreakdown && (<th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tr-xl">
@@ -689,7 +740,8 @@ export default function Booking() {
                                 </th>)}
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-100">
+                        <tbody className="bg-white divide-y divide-gray-100" >
+                            {/* style={{ fontSize: '14px' }} */}
                             {paginated.length === 0 ? (
                                 <tr>
                                     <td colSpan={8} className="text-center py-8 text-gray-500">
@@ -719,9 +771,26 @@ export default function Booking() {
                                                 ? `${formatTime(b.starting_time)} - ${formatTime(b.ending_time)}`
                                                 : b.time}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">{b.requested_by || b.requestedBy || '-'}</td>
+
                                         <td className="px-6 py-4 whitespace-nowrap">{b.organization || b.org || '-'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">{b.contact || '-'}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                            {equipmentMap[b.id]?.length > 0 ? (
+                                                <ul className="list-disc list-inside space-y-1">
+                                                    {equipmentMap[b.id].map((item, idx) => (
+                                                        <li key={idx}>{item.quantity}x {item.type}</li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <span className="text-gray-400 italic">No equipment</span>
+                                            )}
+                                        </td>
+
+                                        {showRequesterInfo && (
+                                            <>
+                                                <td className="px-6 py-4 whitespace-nowrap">{b.requested_by || b.requestedBy || '-'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap">{b.contact || '-'}</td>
+                                            </>
+                                        )}
                                         <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleStatusClick(idx)}>
                                             {editStatusIndex === idx ? (
                                                 <select
