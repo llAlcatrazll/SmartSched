@@ -19,6 +19,11 @@ app.get('/api/test', async (req, res) => {
     console.log("object");
 });
 
+// CHATBOT
+const chatbotRoute = require('./routes/chatbot');
+app.use('/api/chatbot', chatbotRoute);
+
+
 const loginRoute = require('./routes/account/login');
 const fetchUserRoute = require('./routes/account/fetchUserDetails');
 // 
