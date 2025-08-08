@@ -1,3 +1,4 @@
+// routes/fetchEquipment.js
 const express = require('express');
 const router = express.Router();
 const { Pool } = require('pg');
@@ -11,17 +12,23 @@ const pool = new Pool({
 router.get('/', async (req, res) => {
     const { booking_id } = req.query;
 
-    if (!booking_id) {
-        return res.status(400).json({ success: false, message: 'Missing booking_id in query' });
-    }
-
     try {
-        const result = await pool.query(
-            `SELECT id, type, quantity, booking_id, model_id
-             FROM "Equipment"
-             WHERE booking_id = $1`,
-            [booking_id]
-        );
+        let result;
+        if (booking_id) {
+            // Fetch equipment for a specific booking
+            result = await pool.query(
+                `SELECT id, type, quantity, booking_id, model_id
+                 FROM "Equipment"
+                 WHERE booking_id = $1`,
+                [booking_id]
+            );
+        } else {
+            // Fetch all equipment if no booking_id is provided
+            result = await pool.query(
+                `SELECT id, type, quantity, booking_id, model_id
+                 FROM "Equipment"`
+            );
+        }
 
         res.json({ success: true, equipment: result.rows });
     } catch (err) {

@@ -23,9 +23,16 @@ app.get('/api/test', async (req, res) => {
 const chatbotRoute = require('./routes/chatbot');
 app.use('/api/chatbot', chatbotRoute);
 
+const updateEquipmentRoute = require('./routes/booking/updateEquipment');
+app.use('/api/update-equipment', updateEquipmentRoute);
+const deleteEquipmentRoute = require('./routes/booking/deleteEquipment');
+app.use('/api/delete-equipment', deleteEquipmentRoute);
+
 
 const loginRoute = require('./routes/account/login');
 const fetchUserRoute = require('./routes/account/fetchUserDetails');
+const updateEquipmentModelRoute = require('./routes/booking/updateEquipmentModel');
+app.use('/api/update-equipment-model', updateEquipmentModelRoute);
 // 
 const createBookingRoute = require('./routes/booking/createBooking');
 const deleteBookingRoute = require('./routes/booking/deleteBooking');

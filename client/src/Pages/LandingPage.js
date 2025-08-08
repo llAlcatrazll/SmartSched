@@ -20,11 +20,12 @@ const user = {
     avatar: 'https://randomuser.me/api/portraits/men/32.jpg'
 };
 
-async function sendCohereChatMessage(message, bookings = []) {
+async function sendCohereChatMessage(message, bookings = [], currentDateTime) {
     try {
         const response = await axios.post('http://localhost:5000/api/chatbot', {
             message,
             bookings,
+            currentDateTime, // include timestamp in request body
         });
         return response.data.reply;
     } catch (error) {
@@ -32,6 +33,7 @@ async function sendCohereChatMessage(message, bookings = []) {
         return 'Sorry, something went wrong while chatting with AI.';
     }
 }
+
 
 export default function LandingPage() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -64,8 +66,14 @@ export default function LandingPage() {
         setChatInput('');
         setIsBotTyping(true);
 
+        const currentDateTime = new Date().toLocaleString('en-US', {
+            dateStyle: 'full',
+            timeStyle: 'short'
+        }); // e.g., "Thursday, August 7, 2025 at 10:15 PM"
+
+
         try {
-            const response = await sendCohereChatMessage(chatInput, formattedBookings);
+            const response = await sendCohereChatMessage(chatInput, formattedBookings, currentDateTime);
             setChatMessages([...newMessages, { from: 'ai', text: response }]);
         } catch (err) {
             setChatMessages([...newMessages, { from: 'ai', text: 'Something went wrong. Try again.' }]);
@@ -73,6 +81,7 @@ export default function LandingPage() {
             setIsBotTyping(false);
         }
     };
+
 
     useEffect(() => {
         fetch('http://localhost:5000/api/fetch-bookings')
