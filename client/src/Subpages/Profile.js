@@ -88,9 +88,9 @@ export default function Profile() {
             </div>
 
             {/* Center: Bookings */}
-            <div className="md:w-11/12 w-full">
+            <div className="md:w-full w-full">
                 <div className="bg-white rounded-xl shadow-md p-6">
-                    <h2 className="text-xl font-bold mb-4 text-[#96161C] flex items-center gap-2">
+                    <h2 className="text-sm font-bold mb-4 text-[#96161C] flex items-center gap-2">
                         <CalendarDays className="w-6 h-6" /> My Bookings
                     </h2>
                     {bookings.length === 0 ? (
@@ -113,13 +113,11 @@ export default function Profile() {
                                             key={b.id}
                                             className={`transition hover:bg-[#f8eaea] ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                                         >
-                                            <td className="px-4 py-2 font-semibold text-[#96161C]">{b.event_name}</td>
-                                            <td className="px-4 py-2">{b.event_facility}</td>
-                                            <td className="px-4 py-2">{extractDate(b.event_date)}</td>
-                                            <td className="px-4 py-2">
-                                                {formatTime(b.starting_time)} - {formatTime(b.ending_time)}
-                                            </td>
-                                            <td className="px-4 py-2">
+                                            <td className="px-4 py-2 font-semibold text-[#96161C] whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px]">{b.event_name}</td>
+                                            <td className="px-4 py-4 whitespace-nowrap overflow-hidden text-ellipsis max-w-[140px]">{b.event_facility}</td>
+                                            <td className="px-4 py-4 whitespace-nowrap">{extractDate(b.event_date)}</td>
+                                            <td className="px-4 py-4 whitespace-nowrap">{formatTime(b.starting_time)} - {formatTime(b.ending_time)}</td>
+                                            <td className="px-4 py-4 whitespace-nowrap">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-bold shadow
                                                     ${b.status === 'Approved'
                                                         ? 'bg-green-100 text-green-700 border border-green-300'
@@ -147,10 +145,10 @@ export default function Profile() {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-[#96161C]">
                                     <tr>
-                                        <th className="px-4 py-2 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tl-xl">Purpose</th>
-                                        <th className="px-4 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Vehicle Type</th>
-                                        <th className="px-4 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Date</th>
-                                        <th className="px-4 py-2 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tr-xl">Status</th>
+                                        <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tl-xl">Purpose</th>
+                                        <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Vehicle Type</th>
+                                        <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Date</th>
+                                        <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tr-xl">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-100">
@@ -159,10 +157,10 @@ export default function Profile() {
                                             key={v.id}
                                             className={`transition hover:bg-[#f8eaea] ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                                         >
-                                            <td className="px-4 py-2 font-semibold text-[#96161C]">{v.purpose}</td>
-                                            <td className="px-4 py-2">{v.vehicle_Type || v.vehicle_type}</td>
-                                            <td className="px-4 py-2">{extractDate(v.date)}</td>
-                                            <td className="px-4 py-2">
+                                            <td className="px-4 py-4 font-semibold text-[#96161C]">{v.purpose}</td>
+                                            <td className="px-4 py-4">{v.vehicle_Type || v.vehicle_type}</td>
+                                            <td className="px-4 py-4">{extractDate(v.date)}</td>
+                                            <td className="px-4 py-4">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-bold shadow
                                     ${v.status === 'Approved'
                                                         ? 'bg-green-100 text-green-700 border border-green-300'

@@ -14,11 +14,7 @@ import VehicleCalendar from '../Subpages/Vehicle/VehicleCalendar';
 import UserManagement from '../Subpages/UserManagement';
 import ManageEquipment from '../Subpages/ManageEquipment';
 
-const user = {
-    name: 'Andre Narval',
-    role: 'ADMINISTRATOR',
-    avatar: 'https://randomuser.me/api/portraits/men/32.jpg'
-};
+
 
 async function sendCohereChatMessage(message, bookings = [], currentDateTime) {
     try {
@@ -48,7 +44,8 @@ export default function LandingPage() {
         { from: 'bot', text: 'Hi! How can I help you today?' }
     ]);
     const [bookings, setBookings] = useState([]);
-
+    const [sidebarUser, setSidebarUser] = useState({ name: '', role: '', avatar: '', email: '', contact: '', affiliation: '' });
+    const [user, setUser] = useState(null);
     const formattedBookings = bookings.map((b) => ({
         name: b.event_name,
         facility: b.event_facility,
@@ -84,6 +81,8 @@ export default function LandingPage() {
 
 
     useEffect(() => {
+        const userId = Number(localStorage.getItem('currentUserId'));
+        if (!userId) return;
         fetch('http://localhost:5000/api/fetch-bookings')
             .then(res => res.json())
             .then(data => {
@@ -92,6 +91,14 @@ export default function LandingPage() {
                     setBookings(data.bookings);
                 }
             });
+        fetch(`http://localhost:5000/api/fetch-user/${userId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setUser(data.user);
+                }
+            });
+
     }, []);
 
     useEffect(() => {
@@ -136,18 +143,18 @@ export default function LandingPage() {
             >
                 <div className="flex flex-col items-center mb-8">
                     <div className="flex items-center justify-between w-full mb-4 pr-4">
-                        <span className={`text-[#ffa7a7] font-bold tracking-widest text-lg ${!isSidebarOpen && 'hidden'}`}>ADMIN</span>
+                        <span className={`text-[#ffa7a7] font-bold tracking-widest text-lg ${!isSidebarOpen && 'hidden'}`}>{user?.role.toUpperCase()}</span>
                         <button onClick={toggleSidebar} className="text-white">{isSidebarOpen ? <X /> : <Menu />}</button>
                     </div>
                     <img
-                        src={user.avatar}
+                        src={sidebarUser.avatar}
                         alt="Profile"
                         className={`rounded-full border-4 border-[#96161C] shadow-lg mb-2 ${isSidebarOpen ? 'w-20 h-20' : 'w-10 h-10'}`}
                     />
                     {isSidebarOpen && (
                         <>
-                            <div className="text-lg font-bold text-white">{user.name}</div>
-                            <div className="text-sm font-bold text-[#ffa7a7] tracking-widest">{user.role}</div>
+                            <div className="text-lg font-bold text-white">{user?.name || 'User'}</div>
+                            <div className="text-sm font-bold text-[#ffa7a7] tracking-widest">{user?.affiliation || 'asd'}</div>
                         </>
                     )}
                 </div>

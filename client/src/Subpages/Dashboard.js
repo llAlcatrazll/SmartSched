@@ -4,45 +4,50 @@ import {
     BarChart, Bar, PieChart, Pie, Cell
 } from 'recharts';
 
-// Pie chart for booking status
-const campaignData = [
-    { name: 'Approved', value: 12 },
-    { name: 'Pending', value: 5 },
-    { name: 'Declined', value: 3 },
-];
 const CAMPAIGN_COLORS = ['#34d399', '#fbbf24', '#ef4444'];
 
-// Bar chart for bookings per month
-const salesData = [
-    { month: 'Jan', bookings: 20 },
-    { month: 'Feb', bookings: 35 },
-    { month: 'Mar', bookings: 28 },
-    { month: 'Apr', bookings: 40 },
-    { month: 'May', bookings: 32 },
-    { month: 'Jun', bookings: 25 },
-];
+export default function Dashboard({ bookings = [] }) {
+    // Pie chart: status counts
+    const statusCounts = bookings.reduce((acc, b) => {
+        const status = (b.status || 'Pending').toLowerCase();
+        if (status === 'approved') acc.Approved++;
+        else if (status === 'pending') acc.Pending++;
+        else acc.Declined++;
+        return acc;
+    }, { Approved: 0, Pending: 0, Declined: 0 });
+    const campaignData = [
+        { name: 'Approved', value: statusCounts.Approved },
+        { name: 'Pending', value: statusCounts.Pending },
+        { name: 'Declined', value: statusCounts.Declined },
+    ];
 
-// Line chart for bookings per college
-const revenueData = [
-    { college: 'CCIS', bookings: 120 },
-    { college: 'CEDAS', bookings: 95 },
-    { college: 'CHS', bookings: 80 },
-    { college: 'COE', bookings: 110 },
-    { college: 'CABE', bookings: 60 },
-];
+    // Bar chart: bookings per month (current year)
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentYear = new Date().getFullYear();
+    const salesData = Array.from({ length: 12 }, (_, i) => ({ month: monthNames[i], bookings: 0 }));
+    bookings.forEach(b => {
+        const dateStr = b.event_date || b.date;
+        if (!dateStr) return;
+        const d = new Date(dateStr);
+        if (d.getFullYear() === currentYear) {
+            salesData[d.getMonth()].bookings++;
+        }
+    });
 
-const transactions = [
-    { user: 'johndoe', date: '2021-09-01', facility: 'Room 101', status: 'Approved' },
-    { user: 'jackdower', date: '2022-04-01', facility: 'Gym', status: 'Pending' },
-    { user: 'aberdhonny', date: '2021-09-01', facility: 'Auditorium', status: 'Approved' },
-    { user: 'goodmanave', date: '2022-11-05', facility: 'Conference Hall', status: 'Approved' },
-    { user: 'stevebower', date: '2022-11-02', facility: 'Room 202', status: 'Rejected' },
-    { user: 'aberdhonny', date: '2021-09-01', facility: 'Room 101', status: 'Approved' },
-    { user: 'wootzifer', date: '2019-04-15', facility: 'Lab', status: 'Pending' },
-    { user: 'jackdower', date: '2022-04-01', facility: 'Gym', status: 'Pending' },
-];
+    // Line chart: bookings per association/org
+    const orgMap = {};
+    bookings.forEach(b => {
+        const org = (b.organization || b.org || 'Unknown').trim();
+        if (!orgMap[org]) orgMap[org] = 0;
+        orgMap[org]++;
+    });
+    const revenueData = Object.entries(orgMap).map(([org, count]) => ({ association: org, bookings: count }));
 
-export default function Dashboard() {
+    // Show the 5 most recent bookings (sorted by date descending)
+    const recentBookings = [...(bookings || [])]
+        .sort((a, b) => new Date(b.event_date || b.date) - new Date(a.event_date || a.date))
+        .slice(0, 5);
+
     return (
         <div className="bg-white min-h-screen p-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
@@ -72,7 +77,7 @@ export default function Dashboard() {
                                 innerRadius={50}
                                 outerRadius={70}
                                 paddingAngle={5}
-                                dataKey="value" z
+                                dataKey="value"
                                 label={({ name, percent }) =>
                                     `${name} (${(percent * 100).toFixed(0)}%)`
                                 }
@@ -102,7 +107,7 @@ export default function Dashboard() {
                         <BarChart data={salesData}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="month" />
-                            <YAxis />
+                            <YAxis allowDecimals={false} />
                             <Tooltip />
                             <Bar dataKey="bookings" fill="#6366f1" />
                         </BarChart>
@@ -123,49 +128,53 @@ export default function Dashboard() {
                             <div>Status</div>
                         </div>
                         {/* Booking Rows */}
-                        {transactions.map((t, i) => (
-                            <div
-                                key={i}
-                                className={`grid grid-cols-1 md:grid-cols-4 items-center py-3 border-b last:border-b-0
-                                    ${i % 2 === 0 ? 'bg-white md:bg-transparent' : 'bg-gray-100 md:bg-transparent'}`}
-                            >
-                                {/* Booked By & Facility (stacked on mobile, inline on desktop) */}
-                                <div className="md:col-span-1">
-                                    <span className="font-medium text-gray-800">{t.user}</span>
-                                    <span className="block md:hidden text-gray-500 text-xs">{t.facility}</span>
+                        {recentBookings.length === 0 ? (
+                            <div className="text-gray-400 text-center py-6">No recent bookings found.</div>
+                        ) : (
+                            recentBookings.map((b, i) => (
+                                <div
+                                    key={b.id || i}
+                                    className={`grid grid-cols-1 md:grid-cols-4 items-center py-3 border-b last:border-b-0
+                                        ${i % 2 === 0 ? 'bg-white md:bg-transparent' : 'bg-gray-100 md:bg-transparent'}`}
+                                >
+                                    {/* Booked By & Facility (stacked on mobile, inline on desktop) */}
+                                    <div className="md:col-span-1">
+                                        <span className="font-medium text-gray-800">{b.requested_by || b.requestedBy || '-'}</span>
+                                        <span className="block md:hidden text-gray-500 text-xs">{b.event_facility || b.facility || '-'}</span>
+                                    </div>
+                                    <div className="hidden md:block md:col-span-1 text-gray-500">{b.event_facility || b.facility || '-'}</div>
+                                    <div className="md:col-span-1 text-gray-700 text-sm">{new Date(b.event_date || b.date).toLocaleDateString()}</div>
+                                    <div className="md:col-span-1">
+                                        <span
+                                            className={`inline-block px-3 py-1 rounded-full text-xs font-bold
+                                                ${b.status === 'Approved'
+                                                    ? 'bg-green-100 text-green-700'
+                                                    : b.status === 'Pending' || b.status === 'pending'
+                                                        ? 'bg-yellow-100 text-yellow-700'
+                                                        : 'bg-red-100 text-red-700 border border-[#96161C]'
+                                                }`}
+                                        >
+                                            {b.status || 'Pending'}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="hidden md:block md:col-span-1 text-gray-500">{t.facility}</div>
-                                <div className="md:col-span-1 text-gray-700 text-sm">{t.date}</div>
-                                <div className="md:col-span-1">
-                                    <span
-                                        className={`inline-block px-3 py-1 rounded-full text-xs font-bold
-                                            ${t.status === 'Approved'
-                                                ? 'bg-green-100 text-green-700'
-                                                : t.status === 'Pending'
-                                                    ? 'bg-yellow-100 text-yellow-700'
-                                                    : 'bg-red-100 text-red-700 border border-[#96161C]'
-                                            }`}
-                                    >
-                                        {t.status}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Bottom: Bookings Per College */}
+            {/* Bottom: Bookings Per Association */}
             <div className="bg-gray-50 rounded-lg p-4 shadow mb-6 border-l-4 border-[#96161C]">
                 <div className="font-bold text-gray-800 mb-2 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-[#96161C] inline-block"></span>
-                    Bookings Per College
+                    Bookings Per Association
                 </div>
                 <ResponsiveContainer width="100%" height={260}>
                     <LineChart data={revenueData}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="college" />
-                        <YAxis />
+                        <XAxis dataKey="association" />
+                        <YAxis allowDecimals={false} />
                         <Tooltip />
                         <Legend />
                         <Line type="monotone" dataKey="bookings" stroke="#96161C" strokeWidth={3} dot={{ r: 6, fill: "#96161C" }} />
