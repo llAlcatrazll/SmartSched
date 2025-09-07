@@ -19,7 +19,7 @@ export default function MyCalendar() {
     const [facilities, setFacilities] = useState([]);
     const [orgs, setOrgs] = useState([]);
 
-    const statuses = ['All', 'approved', 'pending', 'rejected'];
+    const statuses = ['All', 'approved', 'pending', 'rejected', 'rescheduled'];
     function renderEventContent(eventInfo) {
         const bgColor = eventInfo.event.backgroundColor || '#96161C';
         return (
@@ -44,13 +44,34 @@ export default function MyCalendar() {
                 if (data.success) {
                     const formatted = data.bookings.map(b => {
                         const dateOnly = b.event_date.split('T')[0]; // ensures YYYY-MM-DD only
+                        // Set color based on status
+                        let bgColor = '#ff9f89';
+                        let borderColor = '#ff9f89';
+                        let textColor = '#000000';
+                        if (b.status === 'approved') {
+                            bgColor = '#4CAF50'; // green
+                            borderColor = '#4CAF50';
+                            textColor = '#fff';
+                        } else if (b.status === 'pending') {
+                            bgColor = '#FFC107'; // yellow
+                            borderColor = '#FFC107';
+                            textColor = '#000';
+                        } else if (b.status === 'rejected') {
+                            bgColor = '#F44336'; // red
+                            borderColor = '#F44336';
+                            textColor = '#fff';
+                        } else if (b.status === 'rescheduled') {
+                            bgColor = '#2196F3'; // blue
+                            borderColor = '#2196F3';
+                            textColor = '#fff';
+                        }
                         return {
                             title: b.event_name || 'Untitled Event',
                             start: `${dateOnly}T${b.starting_time}`,
                             end: `${dateOnly}T${b.ending_time}`,
-                            backgroundColor: '#ff9f89', // or make this dynamic
-                            borderColor: '#ff9f89',
-                            textColor: '#000000',
+                            backgroundColor: bgColor,
+                            borderColor: borderColor,
+                            textColor: textColor,
                             extendedProps: {
                                 status: b.status,
                                 facility: b.event_facility,

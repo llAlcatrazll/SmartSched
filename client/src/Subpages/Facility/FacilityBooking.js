@@ -330,6 +330,17 @@ export default function Booking() {
             org: booking.organization || booking.org || '',
             contact: booking.contact || ''
         });
+        // Always fetch latest equipment for this booking and hydrate equipmentRows
+        fetch(`http://localhost:5000/api/fetch-booking-equipment?booking_id=${booking.id}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setEquipmentRows(data.equipment || []);
+                } else {
+                    setEquipmentRows([]);
+                }
+            })
+            .catch(() => setEquipmentRows([]));
         setShowForm(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -414,7 +425,7 @@ export default function Booking() {
                                         onChange={handleChange}
                                         className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]"
                                         required
-                                        min={getTomorrowDate()}
+                                        min={!editingId ? getTomorrowDate() : undefined}
                                     />
 
                                 </div>
@@ -749,53 +760,34 @@ export default function Booking() {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-[#96161C] position-sticky z-10 top-0">
                             <tr>
-                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider rounded-tl-xl">
-                                    Event
-                                </th>
-                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
-                                    Facility
-                                </th>
-                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
-                                    Date
-                                </th>
-                                <th className="px-2 py-3 text-sm font-bold text-white uppercase tracking-wider text-center">
-                                    Time
-                                </th>
-                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
-                                    Org/Dept
-                                </th>
-                                <th className="px-6 py-2 text-left text-sm font-bold text-white uppercase tracking-wider" >
-                                    Equipment
-                                </th>
+                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider rounded-tl-xl">Event</th>
+                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">Facility</th>
+                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">Date</th>
+                                <th className="px-2 py-3 text-sm font-bold text-white uppercase tracking-wider text-center">Time</th>
+                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">Org/Dept</th>
+                                <th className="px-6 py-2 text-left text-sm font-bold text-white uppercase tracking-wider">Equipment</th>
                                 {showRequesterInfo && (
                                     <>
-                                        <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
-                                            Requested By
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
-                                            Contact
-                                        </th>
-                                    </>)}
-                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">
-                                    Status
-                                </th>
-                                {showFacilityBreakdown && (<th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tr-xl">
-                                    Actions
-                                </th>)}
+                                        <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">Requested By</th>
+                                        <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">Contact</th>
+                                    </>
+                                )}
+                                <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">Status</th>
+                                {showFacilityBreakdown && (
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tr-xl">Actions</th>
+                                )}
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-100" >
+                        <tbody className="divide-y divide-gray-100">
                             {paginated.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className="text-center py-8 text-gray-500">
-                                        No bookings found.
-                                    </td>
+                                    <td colSpan={8} className="text-center py-8 text-gray-500">No bookings found.</td>
                                 </tr>
                             ) : (
                                 paginated.map((b, idx) => (
                                     <tr
                                         key={b.id || idx}
-                                        className={`transition hover:bg-[#f8eaea] ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                                        className={`transition hover:bg-[#f8eaea] ${idx % 2 === 0 ? 'bg-white' : 'bg-[#fde8e8]'}`}>
                                         {/*  */}
                                         <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#96161C]">{b.event_name || b.title}</td>
                                         {/*  */}
@@ -841,26 +833,27 @@ export default function Booking() {
                                                     onChange={(e) => handleStatusChange(idx, e.target.value, b.id)}
                                                     onBlur={() => setEditStatusIndex(null)}
                                                     autoFocus
-                                                    className="text-xs px-3 py-1 border rounded-full"
+                                                    className="text-xs px-3 py-1 border rounded-full focus:ring-2 focus:ring-[#96161C] font-bold shadow"
+                                                    style={{ minWidth: 120 }}
                                                 >
-                                                    <option value="">Option</option>
-                                                    <option value="Approved">Approved</option>
-                                                    <option value="Pending">Pending</option>
-                                                    <option value="Declined">Declined</option>
-                                                    <option value="Rescheduled">Rescheduled</option>
-                                                    {/* <option value="Done">Done</option> */}
+                                                    <option value="" disabled className="text-gray-400">Select status</option>
+                                                    <option value="Pending" style={{ background: '#FEF3C7', color: '#B45309', fontWeight: 'bold' }}>Pending</option>
+                                                    <option value="Approved" style={{ background: '#D1FAE5', color: '#047857', fontWeight: 'bold' }}>Approved</option>
+                                                    <option value="Declined" style={{ background: '#FECACA', color: '#B91C1C', fontWeight: 'bold' }}>Declined</option>
+                                                    <option value="Rescheduled" style={{ background: '#DBEAFE', color: '#1D4ED8', fontWeight: 'bold' }}>Rescheduled</option>
                                                 </select>
                                             ) : (
                                                 <span
                                                     className={`px-3 py-1 rounded-full text-xs font-bold shadow
-                                                            ${b.status === 'Approved'
+                                                        ${b.status === 'approved'
                                                             ? 'bg-green-100 text-green-700 border border-green-300'
                                                             : b.status === 'pending'
                                                                 ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
                                                                 : b.status === 'declined'
                                                                     ? 'bg-red-100 text-red-700 border border-red-300'
-                                                                    : b.status === 'completed' ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                                                                        : 'bg-blue-100 text-blue-700 border border-blue-300'
+                                                                    : b.status === 'rescheduled'
+                                                                        ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                                                        : 'bg-gray-100 text-gray-700 border border-gray-300'
                                                         }`}
                                                 >
                                                     {b.status || 'Pending'}

@@ -5,6 +5,12 @@ export default function Profile() {
     const [user, setUser] = useState(null);
     const [bookings, setBookings] = useState([]);
     const [vehicleBookings, setVehicleBookings] = useState([]);
+    const [filter, setFilter] = useState({
+        status: 'All',
+        facility: 'All',
+        date: ''
+    });
+    const [facilityOptions, setFacilityOptions] = useState([]);
 
     useEffect(() => {
         const userId = Number(localStorage.getItem('currentUserId'));
@@ -26,6 +32,9 @@ export default function Profile() {
                 if (data.success) {
                     const userBookings = data.bookings.filter(b => b.creator_id === userId);
                     setBookings(userBookings);
+                    // Extract unique facilities for filter
+                    const uniqueFacilities = Array.from(new Set(userBookings.map(b => b.event_facility).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+                    setFacilityOptions(uniqueFacilities);
                 }
             });
 
@@ -108,26 +117,38 @@ export default function Profile() {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-100">
-                                    {bookings.map((b, idx) => (
-                                        <tr
-                                            key={b.id}
-                                            className={`transition hover:bg-[#f8eaea] ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                                        >
-                                            <td className="px-4 py-2 font-semibold text-[#96161C] whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px]">{b.event_name}</td>
-                                            <td className="px-4 py-4 whitespace-nowrap overflow-hidden text-ellipsis max-w-[140px]">{b.event_facility}</td>
-                                            <td className="px-4 py-4 whitespace-nowrap">{extractDate(b.event_date)}</td>
-                                            <td className="px-4 py-4 whitespace-nowrap">{formatTime(b.starting_time)} - {formatTime(b.ending_time)}</td>
-                                            <td className="px-4 py-4 whitespace-nowrap">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-bold shadow
-                                                    ${b.status === 'Approved'
-                                                        ? 'bg-green-100 text-green-700 border border-green-300'
-                                                        : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                                                    }`}>
-                                                    {b.status}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {bookings
+                                        .filter(b =>
+                                            (filter.status === 'All' || b.status?.toLowerCase() === filter.status.toLowerCase()) &&
+                                            (filter.facility === 'All' || b.event_facility === filter.facility) &&
+                                            (filter.date === '' || extractDate(b.event_date) === filter.date)
+                                        )
+                                        .map((b, idx) => (
+                                            <tr
+                                                key={b.id}
+                                                className={`transition hover:bg-[#f8eaea] ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                                            >
+                                                <td className="px-4 py-2 font-semibold text-[#96161C] whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px]">{b.event_name}</td>
+                                                <td className="px-4 py-4 whitespace-nowrap overflow-hidden text-ellipsis max-w-[140px]">{b.event_facility}</td>
+                                                <td className="px-4 py-4 whitespace-nowrap">{extractDate(b.event_date)}</td>
+                                                <td className="px-4 py-4 whitespace-nowrap">{formatTime(b.starting_time)} - {formatTime(b.ending_time)}</td>
+                                                <td className="px-4 py-4 whitespace-nowrap">
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold shadow
+                                                        ${b.status?.toLowerCase() === 'approved'
+                                                            ? 'bg-green-100 text-green-700 border border-green-300'
+                                                            : b.status?.toLowerCase() === 'pending'
+                                                                ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                                                                : b.status?.toLowerCase() === 'rejected'
+                                                                    ? 'bg-red-100 text-red-700 border border-red-300'
+                                                                    : b.status?.toLowerCase() === 'rescheduled'
+                                                                        ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                                                        : 'bg-gray-100 text-gray-700 border border-gray-300'
+                                                        }`}>
+                                                        {b.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
                                 </tbody>
                             </table>
                         </div>
@@ -188,18 +209,49 @@ export default function Profile() {
                     <div className="space-y-3">
                         <div>
                             <label className="block text-xs font-semibold mb-1 text-gray-700">Status</label>
-                            <select className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#96161C]">
-                                <option>All</option>
-                                <option>Approved</option>
-                                <option>Pending</option>
+                            <select
+                                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#96161C]"
+                                name="status"
+                                value={filter.status}
+                                onChange={e => setFilter(f => ({ ...f, status: e.target.value }))}
+                            >
+                                <option value="All">All</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Rejected">Rejected</option>
+                                <option value="Rescheduled">Rescheduled</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold mb-1 text-gray-700">Facility</label>
+                            <select
+                                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#96161C]"
+                                name="facility"
+                                value={filter.facility}
+                                onChange={e => setFilter(f => ({ ...f, facility: e.target.value }))}
+                            >
+                                <option value="All">All</option>
+                                {facilityOptions.map(fac => (
+                                    <option key={fac} value={fac}>{fac}</option>
+                                ))}
                             </select>
                         </div>
                         <div>
                             <label className="block text-xs font-semibold mb-1 text-gray-700">Date</label>
-                            <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#96161C]" />
+                            <input
+                                type="date"
+                                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#96161C]"
+                                name="date"
+                                value={filter.date}
+                                onChange={e => setFilter(f => ({ ...f, date: e.target.value }))}
+                            />
                         </div>
-                        <button className="w-full mt-2 bg-[#96161C] text-white py-2 rounded-lg font-semibold hover:bg-[#7a1217] transition">
-                            Apply Filters
+                        <button
+                            className="w-full mt-2 bg-[#96161C] text-white py-2 rounded-lg font-semibold hover:bg-[#7a1217] transition"
+                            onClick={() => setFilter({ status: 'All', facility: 'All', date: '' })}
+                            type="button"
+                        >
+                            Reset Filters
                         </button>
                     </div>
                 </div>

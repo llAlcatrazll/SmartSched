@@ -45,21 +45,19 @@
     To fix
         show only on calendar approved and pending while pending has yellow color
     DONE------->    Limit quantity on equipment booking
-        show equipment booking on edit
-        STATUS COLORS
-        FORMAT STATUS DROP DOWN CHANGE
+    DONE------->    finish profile filter
+    DONE------->    STATUS COLORS
     DONE------->    CALENDAR FILTERS
-        BOOKING FORM ROOM AND NAMES FORMAT SUGGESTION (TO PREVENT MISTYPE)
-
-        Create Booking Hydration and Dehydration
-        Edit facility bookings equipment
+    DONE------->    Create Booking Hydration and Dehydration
     DONE------->    Show booking equipment
-        have edit in profile
     DONE------->     live dashboard
-        finish profile filter
+    DONE------->    FORMAT STATUS DROP DOWN CHANGE
+    DONE------->    show equipment booking on edit
+    DONE------->    working sidebar profile
+        BOOKING FORM ROOM AND NAMES FORMAT SUGGESTION (TO PREVENT MISTYPE)
+        edit equipment on bookings updates the backend
+        have edit in profile
         finish advanced booking parameter system for no conflicts
-
-        working sidebar profile
 
 DONE------->
 DONE------->
