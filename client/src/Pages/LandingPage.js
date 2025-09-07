@@ -121,7 +121,7 @@ export default function LandingPage() {
 
     let RenderedPage;
     switch (activePage) {
-        case 'dashboard': RenderedPage = <Dashboard />; break;
+        case 'dashboard': RenderedPage = <Dashboard bookings={bookings} />; break;
         case 'profile': RenderedPage = <Profile />; break;
         case 'user-management': RenderedPage = <UserManagement />; break;
         case 'calendar': RenderedPage = <CalendarPage />; break;

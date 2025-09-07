@@ -26,7 +26,7 @@ export default function Dashboard({ bookings = [] }) {
     const currentYear = new Date().getFullYear();
     const salesData = Array.from({ length: 12 }, (_, i) => ({ month: monthNames[i], bookings: 0 }));
     bookings.forEach(b => {
-        const dateStr = b.event_date || b.date;
+        const dateStr = b.event_date || b.datew;
         if (!dateStr) return;
         const d = new Date(dateStr);
         if (d.getFullYear() === currentYear) {

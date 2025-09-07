@@ -15,8 +15,8 @@ export default function VehicleBookingCalendar() {
     const [bookings, setBookings] = useState([]);
     const [events, setEvents] = useState([]);
 
-    const vehicleTypes = ['All', 'isuzu', 'hi-ace', 'kia', 'small-bus', 'big-bus', 'tamaraw', 'hilux', 'innova-manual', 'innova-automatic',];
-    const departments = ['All', 'AGSO', 'IT', 'Finance']; // You can update this list from DB if needed
+    const [vehicleTypes, setVehicleTypes] = useState(['All']);
+    const [departments, setDepartments] = useState(['All']);
 
     const renderEventContent = (eventInfo) => {
         return (
@@ -39,25 +39,40 @@ export default function VehicleBookingCalendar() {
         fetch('http://localhost:5000/api/fetch-vehicles')
             .then(res => res.json())
             .then(data => {
-                const formatted = data.map(b => ({
-                    title: `${b.vehicleType} | ${b.requestor}`,
+                // If backend returns { success, bookings }, use bookings array
+                const bookingsArr = Array.isArray(data) ? data : data.bookings || [];
+                const formatted = bookingsArr.map(b => ({
+                    title: `${b.vehicle_Type || 'Unregistered Vehicle'} | ${b.requestor ? toTitleCase(b.requestor) : ''}`,
                     start: b.date,
                     end: b.date,
                     backgroundColor: '#ff9f89',
                     borderColor: '#ff9f89',
                     textColor: '#000000',
                     extendedProps: {
-                        vehicleType: b.vehicleType,
-                        department: b.department,
+                        vehicleType: toTitleCase(b.vehicle_Type),
+                        vehicle: b.vehicle ? toTitleCase(b.vehicle) : '',
+                        department: toTitleCase(b.department),
                         purpose: b.purpose,
-                        requestor: b.requestor
+                        requestor: toTitleCase(b.requestor)
                     }
                 }));
                 setBookings(formatted);
                 setEvents(formatted);
+                // Extract unique vehicle types and departments, sort alphabetically
+                const uniqueTypes = Array.from(new Set(bookingsArr.map(b => toTitleCase(b.vehicle_Type)).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+                setVehicleTypes(['All', ...uniqueTypes]);
+                const uniqueDepts = Array.from(new Set(bookingsArr.map(b => toTitleCase(b.department)).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+                setDepartments(['All', ...uniqueDepts]);
             })
             .catch(err => console.error('Error fetching vehicle bookings:', err));
     }, []);
+
+    function toTitleCase(str) {
+        if (!str) return '';
+        return str.replace(/([a-z])([A-Z])/g, '$1 $2')
+            .replace(/[-_]/g, ' ')
+            .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+    }
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;

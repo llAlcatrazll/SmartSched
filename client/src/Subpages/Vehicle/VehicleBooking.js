@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 export default function VehicleBooking() {
     const [showForm, setShowForm] = useState(true);
     const [bookings, setBookings] = useState([]);
+    const [vehicleTypes, setVehicleTypes] = useState([]);
+    const [departments, setDepartments] = useState([]);
 
     const [form, setForm] = useState({
         vehicleType: '',
@@ -67,14 +69,24 @@ export default function VehicleBooking() {
                 const data = await res.json();
                 const nonDeleted = data.filter(b => !b.deleted); // ← ignore deleted
                 setBookings(nonDeleted);
+                // Extract unique vehicle types and departments, sort alphabetically
+                const uniqueTypes = Array.from(new Set(nonDeleted.map(b => b.vehicleType || b.vehicle_Type).filter(Boolean))).map(toTitleCase).sort((a, b) => a.localeCompare(b));
+                setVehicleTypes(uniqueTypes);
+                const uniqueDepts = Array.from(new Set(nonDeleted.map(b => b.department).filter(Boolean))).map(toTitleCase).sort((a, b) => a.localeCompare(b));
+                setDepartments(uniqueDepts);
             } catch (error) {
                 console.error('Error fetching bookings:', error);
             }
         };
-
-
         fetchBookings();
     }, []);
+
+    function toTitleCase(str) {
+        if (!str) return '';
+        return str.replace(/([a-z])([A-Z])/g, '$1 $2')
+            .replace(/[-_]/g, ' ')
+            .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+    }
 
 
     const handleEdit = (index) => {
@@ -85,6 +97,8 @@ export default function VehicleBooking() {
     };
     const [filter, setFilter] = useState({
         search: '',
+        vehicleType: 'All',
+        department: 'All',
         dateFrom: '',
         dateTo: ''
     });
@@ -252,6 +266,34 @@ export default function VehicleBooking() {
                                     className="border rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#96161C]"
                                 />
                             </div>
+                            <div className="flex-1 min-w-[140px] max-w-xs">
+                                <label className="block text-xs font-semibold mb-1 text-[#96161C]">Vehicle Type</label>
+                                <select
+                                    name="vehicleType"
+                                    value={filter.vehicleType}
+                                    onChange={handleFilterChange}
+                                    className="border rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#96161C]"
+                                >
+                                    <option value="All">All</option>
+                                    {vehicleTypes.map(type => (
+                                        <option key={type} value={type}>{type}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex-1 min-w-[140px] max-w-xs">
+                                <label className="block text-xs font-semibold mb-1 text-[#96161C]">Department</label>
+                                <select
+                                    name="department"
+                                    value={filter.department}
+                                    onChange={handleFilterChange}
+                                    className="border rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#96161C]"
+                                >
+                                    <option value="All">All</option>
+                                    {departments.map(dep => (
+                                        <option key={dep} value={dep}>{dep}</option>
+                                    ))}
+                                </select>
+                            </div>
                             <div className="flex-1 min-w-[120px] max-w-xs">
                                 <label className="block text-xs font-semibold mb-1 text-[#96161C]">Date From</label>
                                 <input
@@ -276,6 +318,8 @@ export default function VehicleBooking() {
                                 className="bg-[#96161C] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#7a1217] transition"
                                 onClick={() => setFilter({
                                     search: '',
+                                    vehicleType: 'All',
+                                    department: 'All',
                                     dateFrom: '',
                                     dateTo: ''
                                 })}
@@ -306,15 +350,17 @@ export default function VehicleBooking() {
                             </tr>
                         ) : (
                             bookings.filter(b =>
-                                (filter.search === '' || b.requestor.toLowerCase().includes(filter.search.toLowerCase())) &&
+                                (filter.search === '' || (b.requestor && b.requestor.toLowerCase().includes(filter.search.toLowerCase()))) &&
+                                (filter.vehicleType === 'All' || toTitleCase(b.vehicleType || b.vehicle_Type) === filter.vehicleType) &&
+                                (filter.department === 'All' || toTitleCase(b.department) === filter.department) &&
                                 (filter.dateFrom === '' || b.date >= filter.dateFrom) &&
                                 (filter.dateTo === '' || b.date <= filter.dateTo)
                             ).map((b, index) => (
                                 <tr key={index} className="hover:bg-gray-50 transition">
-                                    <td className="px-6 py-4">{b.vehicle_Type}</td>
-                                    <td className="px-6 py-4">{b.requestor}</td>
-                                    <td className="px-6 py-4">{b.department}</td>
-                                    <td className="px-6 py-4">             {new Date(b.event_date || b.date).toLocaleDateString('en-US', {
+                                    <td className="px-6 py-4">{toTitleCase(b.vehicleType || b.vehicle_Type)}</td>
+                                    <td className="px-6 py-4">{toTitleCase(b.requestor)}</td>
+                                    <td className="px-6 py-4">{toTitleCase(b.department)}</td>
+                                    <td className="px-6 py-4">{new Date(b.event_date || b.date).toLocaleDateString('en-US', {
                                         year: 'numeric',
                                         month: 'long',
                                         day: '2-digit',

@@ -16,10 +16,11 @@ export default function MyCalendar() {
     });
     const [bookings, setBookings] = useState([]);
     const [events, setEvents] = useState([]);
+    const [facilities, setFacilities] = useState([]);
+    const [orgs, setOrgs] = useState([]);
 
-    const statuses = ['All', 'Approved', 'Pending', 'Rejected'];
-    const facilities = ['Gym', 'Auditorium', 'Room A', 'Pending Test', 'Pending Test 2'];
-    const orgs = ['Org 1', 'Org 2', 'Org 3']; function renderEventContent(eventInfo) {
+    const statuses = ['All', 'approved', 'pending', 'rejected'];
+    function renderEventContent(eventInfo) {
         const bgColor = eventInfo.event.backgroundColor || '#96161C';
         return (
             <div
@@ -60,6 +61,11 @@ export default function MyCalendar() {
                     setBookings(formatted);
                     setEvents(formatted);
 
+                    // Extract unique facilities and orgs, sort alphabetically
+                    const uniqueFacilities = Array.from(new Set(data.bookings.map(b => b.event_facility || '').filter(Boolean))).sort((a, b) => a.localeCompare(b));
+                    setFacilities(uniqueFacilities);
+                    const uniqueOrgs = Array.from(new Set(data.bookings.map(b => b.organization || '').filter(Boolean))).sort((a, b) => a.localeCompare(b));
+                    setOrgs(uniqueOrgs);
                 } else {
                     console.log('Fetch bookings failed:', data.message || data.error);
                 }
