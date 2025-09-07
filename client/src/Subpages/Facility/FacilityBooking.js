@@ -25,6 +25,7 @@ export default function Booking() {
     const [userId, setUserId] = useState(null);
     const [showRequesterInfo, setShowRequesterInfo] = useState(false);
     const [equipmentMap, setEquipmentMap] = useState({});
+    const [deletedEquipmentIds, setDeletedEquipmentIds] = useState([]);
 
     useEffect(() => {
         const storedRole = localStorage.getItem('currentUserRole');
@@ -234,28 +235,38 @@ export default function Booking() {
                     requested_by: form.requestedBy,
                     organization: form.org,
                     contact: form.contact,
-                    creator_id: currentUserId // <- pass your logged-in user's ID
+                    creator_id: currentUserId
                 })
             });
-
 
             const data = await response.json();
 
             if (data.success) {
-                const bookingId = data.id;
+                const bookingId = editingId ? editingId : data.id;
 
-
-                // Post each equipment row
-                for (const eq of equipmentRows) {
-                    await fetch('http://localhost:5000/api/create-equipment', {
-                        method: 'POST',
+                // If editing, update equipment using the new endpoint
+                if (editingId) {
+                    await fetch(`http://localhost:5000/api/edit-booking-equipment/${bookingId}`, {
+                        method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            type: eq.type,
-                            quantity: eq.quantity,
-                            booking_id: bookingId
+                            equipment: equipmentRows, // with id for existing, no id for new
+                            deletedIds: deletedEquipmentIds
                         })
                     });
+                } else {
+                    // If creating, add equipment as before
+                    for (const eq of equipmentRows) {
+                        await fetch('http://localhost:5000/api/create-equipment', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                type: eq.type,
+                                quantity: eq.quantity,
+                                booking_id: bookingId
+                            })
+                        });
+                    }
                 }
 
                 alert(editingId ? 'Booking updated successfully' : 'Booking created successfully');
@@ -593,8 +604,11 @@ export default function Booking() {
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    const updated = equipmentRows.filter((_, i) => i !== index);
-                                                    setEquipmentRows(updated);
+                                                    // When removing equipment row:
+                                                    if (equipmentRows[index].id) {
+                                                        setDeletedEquipmentIds([...deletedEquipmentIds, equipmentRows[index].id]);
+                                                    }
+                                                    setEquipmentRows(equipmentRows.filter((_, i) => i !== index));
                                                 }}
                                                 className="text-red-600 hover:text-red-800 text-lg font-bold"
                                                 title="Remove"
