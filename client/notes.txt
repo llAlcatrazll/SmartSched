@@ -48,14 +48,14 @@
         show equipment booking on edit
         STATUS COLORS
         FORMAT STATUS DROP DOWN CHANGE
-        CALENDAR FILTERS
+    DONE------->    CALENDAR FILTERS
         BOOKING FORM ROOM AND NAMES FORMAT SUGGESTION (TO PREVENT MISTYPE)
 
         Create Booking Hydration and Dehydration
         Edit facility bookings equipment
     DONE------->    Show booking equipment
         have edit in profile
-        live dashboard
+    DONE------->     live dashboard
         finish profile filter
         finish advanced booking parameter system for no conflicts
 
