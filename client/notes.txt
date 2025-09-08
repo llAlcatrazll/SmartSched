@@ -37,9 +37,6 @@
     Innova Automatic
 
 
-    Proper Date booking and limitation
-    colored enum for STATUS
-    personal color on calendar
 
 
     To fix
@@ -53,9 +50,12 @@
     DONE------->    FORMAT STATUS DROP DOWN CHANGE
     DONE------->    show equipment booking on edit
     DONE------->    working sidebar profile
-        show only on calendar approved and pending while pending has yellow color
-        BOOKING FORM ROOM AND NAMES FORMAT SUGGESTION (TO PREVENT MISTYPE)
-        edit equipment on bookings updates the backend
+    DONE------->    edit equipment on bookings updates the backend
+    DONE------->    Proper Date booking and limitation
+    DONE------->    colored enum for STATUS
+    DONE------->    BOOKING FORM ROOM AND NAMES FORMAT SUGGESTION (TO PREVENT MISTYPE)
+    DONE------->    personal color on calendar
+    MODIFIED------->show only on public calendar approved and pending while pending has yellow color
         have edit in profile
         finish advanced booking parameter system for no conflicts
 

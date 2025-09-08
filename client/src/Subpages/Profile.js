@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { User, Mail, Phone, Building, CalendarDays, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Profile() {
     const [user, setUser] = useState(null);
@@ -11,6 +12,7 @@ export default function Profile() {
         date: ''
     });
     const [facilityOptions, setFacilityOptions] = useState([]);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const userId = Number(localStorage.getItem('currentUserId'));
@@ -69,6 +71,33 @@ export default function Profile() {
         return datetime.split('T')[0];
     }
 
+    function handleEdit(booking) {
+        // Navigate to FacilityBooking and pass the booking id in state
+        navigate('/facility-bookings', { state: { editBookingId: booking.id } });
+    }
+
+    function handleDelete(bookingId) {
+        if (window.confirm('Are you sure you want to delete this booking?')) {
+            // Call the delete API
+            fetch(`http://localhost:5000/api/delete-booking/${bookingId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove the deleted booking from state
+                        setBookings(bookings.filter(b => b.id !== bookingId));
+                        alert('Booking deleted successfully.');
+                    } else {
+                        alert('Error deleting booking. Please try again.');
+                    }
+                });
+        }
+    }
+
     return (
         <div className="flex flex-col md:flex-row gap-8 w-full max-w-7xl mx-auto">
             {/* Left: Profile Card */}
@@ -113,7 +142,8 @@ export default function Profile() {
                                         <th className="px-4 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Facility</th>
                                         <th className="px-4 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Date</th>
                                         <th className="px-4 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Time</th>
-                                        <th className="px-4 py-2 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tr-xl">Status</th>
+                                        <th className="px-4 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Status</th>
+                                        <th className="px-4 py-2 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tr-xl">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-100">
@@ -146,6 +176,26 @@ export default function Profile() {
                                                         }`}>
                                                         {b.status}
                                                     </span>
+                                                </td>
+                                                <td className="px-4 py-4 whitespace-nowrap flex gap-2">
+                                                    <button
+                                                        onClick={() => handleEdit(b)}
+                                                        className="text-[#96161C] hover:text-[#7a1217] transition"
+                                                        title="Edit Booking"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path d="M17.414 2.586a2 2 0 010 2.828L8.414 14.414l-4.828 1.414 1.414-4.828L14.586 2.586a2 2 0 012.828 0z" />
+                                                        </svg>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(b.id)}
+                                                        className="text-red-600 hover:text-red-800 transition"
+                                                        title="Delete Booking"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block" fill="currentColor" viewBox="0 0 24 24">
+                                                            <path d="M9 3v1H4v2h16V4h-5V3H9zm1 5v12h2V8h-2zm4 0v12h2V8h-2z" />
+                                                        </svg>
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}

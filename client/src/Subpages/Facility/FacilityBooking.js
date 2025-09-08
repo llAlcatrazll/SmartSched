@@ -1,4 +1,7 @@
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect } from 'react';
+import { orgAbbreviations } from '../../constants/OrgAbbreviations';
+import { orgAbbreviations as facilityList } from '../../constants/FacilitiesListing';
+import { useLocation } from 'react-router-dom';
 
 function formatTime(timeStr) {
     if (!timeStr) return '';
@@ -26,6 +29,12 @@ export default function Booking() {
     const [showRequesterInfo, setShowRequesterInfo] = useState(false);
     const [equipmentMap, setEquipmentMap] = useState({});
     const [deletedEquipmentIds, setDeletedEquipmentIds] = useState([]);
+    const [orgSuggestions, setOrgSuggestions] = useState([]);
+    const [showOrgSuggestions, setShowOrgSuggestions] = useState(false);
+    const [facilitySuggestions, setFacilitySuggestions] = useState([]);
+    const [showFacilitySuggestions, setShowFacilitySuggestions] = useState(false);
+    const location = useLocation();
+
 
     useEffect(() => {
         const storedRole = localStorage.getItem('currentUserRole');
@@ -356,6 +365,17 @@ export default function Booking() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    useEffect(() => {
+        // If navigated with an editBookingId, trigger handleEdit
+        if (location.state && location.state.editBookingId && bookings.length > 0) {
+            const bookingToEdit = bookings.find(b => b.id === location.state.editBookingId);
+            if (bookingToEdit) {
+                handleEdit(bookingToEdit);
+            }
+        }
+        // Optionally clear the state after using it
+        // eslint-disable-next-line
+    }, [location.state, bookings]);
 
 
     // Pagination logic
@@ -487,17 +507,50 @@ export default function Booking() {
                                         required
                                     />
                                 </div>
-                                <div>
+                                <div className="relative">
                                     <label className="block text-sm font-medium mb-1">Event facility*</label>
                                     <input
                                         type="text"
                                         name="facility"
                                         value={form.facility}
-                                        onChange={handleChange}
+                                        onChange={e => {
+                                            const value = e.target.value;
+                                            setForm(prev => ({ ...prev, facility: value }));
+                                            if (value.length > 0) {
+                                                const suggestions = facilityList.filter(
+                                                    f => f.toLowerCase().includes(value.toLowerCase())
+                                                );
+                                                setFacilitySuggestions(suggestions);
+                                                setShowFacilitySuggestions(true);
+                                            } else {
+                                                setShowFacilitySuggestions(false);
+                                            }
+                                        }}
+                                        onBlur={() => setTimeout(() => setShowFacilitySuggestions(false), 100)}
+                                        onFocus={() => {
+                                            if (form.facility.length > 0) setShowFacilitySuggestions(true);
+                                        }}
                                         placeholder="Gymnasium"
                                         className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]"
                                         required
+                                        autoComplete="off"
                                     />
+                                    {showFacilitySuggestions && facilitySuggestions.length > 0 && (
+                                        <ul className="absolute z-10 bg-white border border-gray-200 rounded shadow-md mt-1 max-h-48 overflow-y-auto w-full">
+                                            {facilitySuggestions.map((f, idx) => (
+                                                <li
+                                                    key={idx}
+                                                    className="px-4 py-2 hover:bg-[#fde8e8] cursor-pointer"
+                                                    onMouseDown={() => {
+                                                        setForm(prev => ({ ...prev, facility: f }));
+                                                        setShowFacilitySuggestions(false);
+                                                    }}
+                                                >
+                                                    {f}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -523,11 +576,48 @@ export default function Booking() {
                                         type="text"
                                         name="org"
                                         value={form.org}
-                                        onChange={handleChange}
+                                        onChange={e => {
+                                            const value = e.target.value;
+                                            setForm(prev => ({ ...prev, org: value }));
+                                            if (value.length > 0) {
+                                                const suggestions = orgAbbreviations.filter(
+                                                    o =>
+                                                        o.abbr.toLowerCase().includes(value.toLowerCase()) ||
+                                                        o.meaning.toLowerCase().includes(value.toLowerCase())
+                                                );
+                                                setOrgSuggestions(suggestions);
+                                                setShowOrgSuggestions(true);
+                                            } else {
+                                                setShowOrgSuggestions(false);
+                                            }
+                                        }}
+                                        onBlur={() => setTimeout(() => setShowOrgSuggestions(false), 100)}
+                                        onFocus={() => {
+                                            if (form.org.length > 0) setShowOrgSuggestions(true);
+                                        }}
                                         placeholder="AGSO"
                                         className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]"
                                         required
+                                        autoComplete="off"
                                     />
+                                    {showOrgSuggestions && orgSuggestions.length > 0 && (
+                                        <ul className="absolute z-10 bg-white border border-gray-200 rounded shadow-md mt-1 max-h-48 overflow-y-auto w-full">
+                                            {orgSuggestions.map((o, idx) => (
+                                                <li
+                                                    key={idx}
+                                                    className="px-4 py-2 hover:bg-[#fde8e8] cursor-pointer"
+                                                    onMouseDown={() => {
+                                                        setForm(prev => ({ ...prev, org: o.abbr }));
+                                                        setShowOrgSuggestions(false);
+                                                    }}
+                                                >
+                                                    <span className="font-bold">{o.abbr}</span>
+                                                    {o.abbr && <span className="text-gray-500 ml-2">{o.meaning}</span>}
+                                                    {!o.abbr && <span className="text-gray-500">{o.meaning}</span>}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">Contact*</label>

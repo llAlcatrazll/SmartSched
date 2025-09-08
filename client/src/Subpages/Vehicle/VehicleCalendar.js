@@ -4,6 +4,19 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 
+const vehicleTypeColors = {
+    'isuzu': '#b5d8f6',             // pastel blue
+    'hi-ace': '#ffe0b2',            // pastel orange
+    'kia': '#c8e6c9',               // pastel green
+    'small-bus': '#f8bbd0',         // pastel pink
+    'big-bus': '#d1c4e9',           // pastel purple
+    'tamaraw': '#fff9c4',           // pastel yellow
+    'hilux': '#b2dfdb',             // pastel teal
+    'innova-manual': '#f0f4c3',     // pastel lime
+    'innova-automatic': '#f3e5f5',  // pastel lavender
+    'unregistered vehicle': '#e0e0e0' // pastel gray
+};
+
 export default function VehicleBookingCalendar() {
     const [filter, setFilter] = useState({
         search: '',
@@ -19,14 +32,15 @@ export default function VehicleBookingCalendar() {
     const [departments, setDepartments] = useState(['All']);
 
     const renderEventContent = (eventInfo) => {
+        // Use the event's backgroundColor and textColor
         return (
             <div
                 className='w-full'
                 style={{
-                    backgroundColor: '#96161C',
+                    backgroundColor: eventInfo.event.backgroundColor || '#96161C',
                     padding: '2px 4px',
                     borderRadius: '4px',
-                    color: '#fff',
+                    color: eventInfo.event.textColor || '#000',
                     fontSize: '0.75rem'
                 }}
             >
@@ -41,21 +55,25 @@ export default function VehicleBookingCalendar() {
             .then(data => {
                 // If backend returns { success, bookings }, use bookings array
                 const bookingsArr = Array.isArray(data) ? data : data.bookings || [];
-                const formatted = bookingsArr.map(b => ({
-                    title: `${b.vehicle_Type || 'Unregistered Vehicle'} | ${b.requestor ? toTitleCase(b.requestor) : ''}`,
-                    start: b.date,
-                    end: b.date,
-                    backgroundColor: '#ff9f89',
-                    borderColor: '#ff9f89',
-                    textColor: '#000000',
-                    extendedProps: {
-                        vehicleType: toTitleCase(b.vehicle_Type),
-                        vehicle: b.vehicle ? toTitleCase(b.vehicle) : '',
-                        department: toTitleCase(b.department),
-                        purpose: b.purpose,
-                        requestor: toTitleCase(b.requestor)
-                    }
-                }));
+                const formatted = bookingsArr.map(b => {
+                    // Use the lowercase, hyphenated value for color lookup
+                    const typeKey = (b.vehicleType || b.vehicle_Type || 'unregistered vehicle').toLowerCase();
+                    const bgColor = vehicleTypeColors[typeKey] || '#e0e0e0';
+                    return {
+                        title: `${toTitleCase(b.vehicleType || b.vehicle_Type)} | ${toTitleCase(b.requestor)}`,
+                        start: b.date,
+                        end: b.date,
+                        backgroundColor: bgColor,
+                        borderColor: bgColor,
+                        textColor: '#000000',
+                        extendedProps: {
+                            vehicleType: toTitleCase(b.vehicleType || b.vehicle_Type),
+                            department: toTitleCase(b.department),
+                            purpose: b.purpose,
+                            requestor: toTitleCase(b.requestor)
+                        }
+                    };
+                });
                 setBookings(formatted);
                 setEvents(formatted);
                 // Extract unique vehicle types and departments, sort alphabetically
