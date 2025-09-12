@@ -56,8 +56,9 @@
     DONE------->    BOOKING FORM ROOM AND NAMES FORMAT SUGGESTION (TO PREVENT MISTYPE)
     DONE------->    personal color on calendar
     MODIFIED------->show only on public calendar approved and pending while pending has yellow color
-        have edit in profile
-        finish advanced booking parameter system for no conflicts
+    DONE------->    finish advanced booking parameter system for no conflicts
+        suggest equipment
+        
 
 DONE------->
 DONE------->

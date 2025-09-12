@@ -44,6 +44,7 @@ const vehicleBookingRoute = require('./routes/booking/createVehicleBooking');
 const deleteVehicleBooking = require('./routes/booking/deleteVehicleBooking');
 const fetchVehicleBookingRoute = require('./routes/booking/fetchVehicleBooking');
 const updateBookingStatusRoute = require('./routes/booking/updateBookingStatus');
+const fetchVehicleBookingConflicts = require('./routes/booking/fetchBookingConflict');
 // dashboard
 const statusCountsRoute = require('./routes/dashboard/statusCounts');
 // user
@@ -75,6 +76,7 @@ app.use('/api/update-booking-status', updateBookingStatusRoute);
 // DELETE
 app.use('/api/delete-booking', deleteBookingRoute);
 // FETCH
+app.use('/api/fetch-booking-conflicts', fetchVehicleBookingConflicts);
 app.use('/api/fetch-bookings', fetchBookingRoute);
 app.use('/api/fetch-vehicles', fetchVehicleBookingRoute);
 app.use('/api/fetch-booking-equipment', fetchAllBookingEquipment);

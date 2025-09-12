@@ -223,8 +223,73 @@ export default function Booking() {
 
     const handleFilterChange = e => setFilter({ ...filter, [e.target.name]: e.target.value });
     const currentUserId = localStorage.getItem('currentUserId');
+    const isConflict = false;
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log('Venue from form:', form.facility);
+
+        let isConflict = false;
+
+        // Only check for conflicts if NOT editing
+        if (!editingId) {
+            try {
+                // Fetch bookings for this venue
+                const res = await fetch(`http://localhost:5000/api/fetch-booking-conflicts?venue=${encodeURIComponent(form.facility)}`);
+                const data = await res.json();
+                if (data.success) {
+                    console.log('Bookings for this venue:', data.bookings);
+
+                    // Check for date and time conflicts
+                    const newDate = form.date;
+                    const newStart = form.startTime;
+                    const newEnd = form.endTime;
+
+                    function isTimeOverlap(startA, endA, startB, endB) {
+                        return (startA < endB && endA > startB);
+                    }
+
+                    for (const b of data.bookings) {
+                        const bDate = (b.event_date || b.date || '').split('T')[0];
+                        const bStart = b.starting_time || b.startTime || '';
+                        const bEnd = b.ending_time || b.endTime || '';
+
+                        if (
+                            bDate === newDate &&
+                            isTimeOverlap(newStart, newEnd, bStart, bEnd)
+                        ) {
+                            isConflict = true;
+                            console.log('Conflict found with booking:', b);
+                            break;
+                        }
+                    }
+                } else {
+                    console.log('Failed to fetch bookings for this venue:', data.message);
+                }
+            } catch (err) {
+                console.log('Error fetching bookings for this venue:', err);
+            }
+
+            if (isConflict) {
+                console.log('Booking creation halted due to a conflict.');
+                alert('Cannot create booking due to a conflict.');
+                return;
+            }
+        }
+
+        // Check if equipmentRows is empty or all equipment types are empty
+        const hasEquipment = equipmentRows.some(eq => eq.type && eq.quantity);
+
+        if (!hasEquipment) {
+            const proceed = window.confirm(
+                "Are you going to finish booking a venue without an equipment?\n\nPress OK to continue without equipment, or Cancel to go back."
+            );
+            if (!proceed) {
+                // User chose not to proceed
+                return;
+            }
+        }
+
         try {
             const url = editingId
                 ? `http://localhost:5000/api/edit-booking/${editingId}`
@@ -259,7 +324,7 @@ export default function Booking() {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            equipment: equipmentRows, // with id for existing, no id for new
+                            equipment: equipmentRows,
                             deletedIds: deletedEquipmentIds
                         })
                     });
@@ -307,6 +372,7 @@ export default function Booking() {
             alert('Server error');
         }
     };
+
 
 
     const handleDelete = async (id) => {
@@ -898,11 +964,13 @@ export default function Booking() {
                                         <td className="px-6 py-4 whitespace-nowrap">{b.event_facility || b.facility || '-'}</td>
                                         {/*  */}
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {new Date(b.event_date || b.date).toLocaleDateString('en-US', {
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: '2-digit',
-                                            })}
+                                            {(() => {
+                                                const d = (b.event_date || b.date || '').split('T')[0];
+                                                if (!d) return '';
+                                                const [year, month, day] = d.split('-');
+                                                const dateObj = new Date(`${year}-${month}-${day}`);
+                                                return dateObj.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                                            })()}
                                         </td>
 
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
