@@ -13,7 +13,20 @@ export default function Profile() {
     });
     const [facilityOptions, setFacilityOptions] = useState([]);
     const navigate = useNavigate();
+    const [currentPage, setCurrentPage] = useState(1);
+    const bookingsPerPage = 5;
+    const filteredBookings = bookings
+        .filter(b =>
+            (filter.status === 'All' || b.status?.toLowerCase() === filter.status.toLowerCase()) &&
+            (filter.facility === 'All' || b.event_facility === filter.facility) &&
+            (filter.date === '' || extractDate(b.event_date) === filter.date)
+        );
 
+    const totalPages = Math.ceil(filteredBookings.length / bookingsPerPage);
+    const paginatedBookings = filteredBookings.slice(
+        (currentPage - 1) * bookingsPerPage,
+        currentPage * bookingsPerPage
+    );
     useEffect(() => {
         const userId = Number(localStorage.getItem('currentUserId'));
         if (!userId) return;
@@ -78,9 +91,8 @@ export default function Profile() {
 
     function handleDelete(bookingId) {
         if (window.confirm('Are you sure you want to delete this booking?')) {
-            // Call the delete API
             fetch(`http://localhost:5000/api/delete-booking/${bookingId}`, {
-                method: 'DELETE',
+                method: 'PUT', // <-- Use PUT, not DELETE
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -147,58 +159,52 @@ export default function Profile() {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-100">
-                                    {bookings
-                                        .filter(b =>
-                                            (filter.status === 'All' || b.status?.toLowerCase() === filter.status.toLowerCase()) &&
-                                            (filter.facility === 'All' || b.event_facility === filter.facility) &&
-                                            (filter.date === '' || extractDate(b.event_date) === filter.date)
-                                        )
-                                        .map((b, idx) => (
-                                            <tr
-                                                key={b.id}
-                                                className={`transition hover:bg-[#f8eaea] ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                                            >
-                                                <td className="px-4 py-2 font-semibold text-[#96161C] whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px]">{b.event_name}</td>
-                                                <td className="px-4 py-4 whitespace-nowrap overflow-hidden text-ellipsis max-w-[140px]">{b.event_facility}</td>
-                                                <td className="px-4 py-4 whitespace-nowrap">{extractDate(b.event_date)}</td>
-                                                <td className="px-4 py-4 whitespace-nowrap">{formatTime(b.starting_time)} - {formatTime(b.ending_time)}</td>
-                                                <td className="px-4 py-4 whitespace-nowrap">
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold shadow
-                                                        ${b.status?.toLowerCase() === 'approved'
-                                                            ? 'bg-green-100 text-green-700 border border-green-300'
-                                                            : b.status?.toLowerCase() === 'pending'
-                                                                ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                                                                : b.status?.toLowerCase() === 'rejected'
-                                                                    ? 'bg-red-100 text-red-700 border border-red-300'
-                                                                    : b.status?.toLowerCase() === 'rescheduled'
-                                                                        ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                                                                        : 'bg-gray-100 text-gray-700 border border-gray-300'
-                                                        }`}>
-                                                        {b.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-4 whitespace-nowrap flex gap-2">
-                                                    <button
-                                                        onClick={() => handleEdit(b)}
-                                                        className="text-[#96161C] hover:text-[#7a1217] transition"
-                                                        title="Edit Booking"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor">
-                                                            <path d="M17.414 2.586a2 2 0 010 2.828L8.414 14.414l-4.828 1.414 1.414-4.828L14.586 2.586a2 2 0 012.828 0z" />
-                                                        </svg>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(b.id)}
-                                                        className="text-red-600 hover:text-red-800 transition"
-                                                        title="Delete Booking"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block" fill="currentColor" viewBox="0 0 24 24">
-                                                            <path d="M9 3v1H4v2h16V4h-5V3H9zm1 5v12h2V8h-2zm4 0v12h2V8h-2z" />
-                                                        </svg>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                    {paginatedBookings.map((b, idx) => (
+                                        <tr
+                                            key={b.id}
+                                            className={`transition hover:bg-[#f8eaea] ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                                        >
+                                            <td className="px-4 py-2 font-semibold text-[#96161C] whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px]">{b.event_name}</td>
+                                            <td className="px-4 py-4 whitespace-nowrap overflow-hidden text-ellipsis max-w-[140px]">{b.event_facility}</td>
+                                            <td className="px-4 py-4 whitespace-nowrap">{extractDate(b.event_date)}</td>
+                                            <td className="px-4 py-4 whitespace-nowrap">{formatTime(b.starting_time)} - {formatTime(b.ending_time)}</td>
+                                            <td className="px-4 py-4 whitespace-nowrap">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-bold shadow
+                                                    ${b.status?.toLowerCase() === 'approved'
+                                                        ? 'bg-green-100 text-green-700 border border-green-300'
+                                                        : b.status?.toLowerCase() === 'pending'
+                                                            ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                                                            : b.status?.toLowerCase() === 'rejected'
+                                                                ? 'bg-red-100 text-red-700 border border-red-300'
+                                                                : b.status?.toLowerCase() === 'rescheduled'
+                                                                    ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                                                    : 'bg-gray-100 text-gray-700 border border-gray-300'
+                                                    }`}>
+                                                    {b.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap flex gap-2">
+                                                <button
+                                                    onClick={() => handleEdit(b)}
+                                                    className="text-[#96161C] hover:text-[#7a1217] transition"
+                                                    title="Edit Booking"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path d="M17.414 2.586a2 2 0 010 2.828L8.414 14.414l-4.828 1.414 1.414-4.828L14.586 2.586a2 2 0 012.828 0z" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(b.id)}
+                                                    className="text-red-600 hover:text-red-800 transition"
+                                                    title="Delete Booking"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M9 3v1H4v2h16V4h-5V3H9zm1 5v12h2V8h-2zm4 0v12h2V8h-2z" />
+                                                    </svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         </div>
@@ -233,7 +239,7 @@ export default function Profile() {
                                             <td className="px-4 py-4">{extractDate(v.date)}</td>
                                             <td className="px-4 py-4">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-bold shadow
-                                    ${v.status === 'Approved'
+                                ${v.status === 'Approved'
                                                         ? 'bg-green-100 text-green-700 border border-green-300'
                                                         : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
                                                     }`}>
@@ -247,7 +253,23 @@ export default function Profile() {
                         </div>
                     )}
                 </div>
-
+                <div className="flex justify-center items-center gap-2 mt-4">
+                    <button
+                        className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                    >
+                        Prev
+                    </button>
+                    <span className="font-semibold">{currentPage} / {totalPages}</span>
+                    <button
+                        className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                    >
+                        Next
+                    </button>
+                </div>
             </div>
 
             {/* Right: Filters/Actions */}

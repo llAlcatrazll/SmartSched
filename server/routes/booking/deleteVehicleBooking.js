@@ -17,6 +17,7 @@ router.put('/:id', async (req, res) => {
              WHERE id = $1`,
             [bookingId]
         );
+        console.log('hello world');
 
         if (result.rowCount === 0) {
             return res.status(404).json({ success: false, message: 'Vehicle booking not found' });

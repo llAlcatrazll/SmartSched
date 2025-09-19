@@ -160,9 +160,13 @@ export default function LandingPage() {
                 </div>
 
                 <nav className="flex flex-col gap-4 text-white">
-                    {showFacilityBreakdown && (<SidebarItem icon={<Home size={20} />} label="Dashboard" open={isSidebarOpen} onClick={() => handleSetActivePage('dashboard')} />)}
+                    {showFacilityBreakdown && (
+                        <SidebarItem icon={<Home size={20} />} label="Dashboard" open={isSidebarOpen} onClick={() => handleSetActivePage('dashboard')} />
+                    )}
                     <SidebarItem icon={<User size={20} />} label="Profile" open={isSidebarOpen} onClick={() => handleSetActivePage('profile')} />
-                    <SidebarItem icon={<User size={20} />} label="User Management" open={isSidebarOpen} onClick={() => handleSetActivePage('user-management')} />
+                    {user?.role === 'admin' && (
+                        <SidebarItem icon={<User size={20} />} label="User Management" open={isSidebarOpen} onClick={() => handleSetActivePage('user-management')} />
+                    )}
 
                     {isSidebarOpen && (
                         <>
@@ -173,7 +177,9 @@ export default function LandingPage() {
                                 <>
                                     <SidebarItem icon={<Calendar size={20} />} label="Facility Calendar" open={isSidebarOpen} onClick={() => handleSetActivePage('calendar')} />
                                     <SidebarItem icon={<ClipboardList size={20} />} label="Facility Bookings" open={isSidebarOpen} onClick={() => handleSetActivePage('booking')} />
-                                    <SidebarItem icon={<Calendar size={20} />} label="Manage Equipment" open={isSidebarOpen} onClick={() => handleSetActivePage('manage-equipment')} />
+                                    {user?.role === 'admin' && (
+                                        <SidebarItem icon={<Calendar size={20} />} label="Manage Equipment" open={isSidebarOpen} onClick={() => handleSetActivePage('manage-equipment')} />
+                                    )}
                                 </>
                             )}
                         </>

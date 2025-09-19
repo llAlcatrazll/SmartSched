@@ -151,9 +151,11 @@ export default function Booking() {
                 let visibleBookings = [];
 
                 if (user.role === 'admin') {
-                    visibleBookings = data.bookings;
+                    visibleBookings = data.bookings.filter(b => b.deleted === false);
                 } else if (user.role === 'user') {
-                    visibleBookings = data.bookings.filter(b => b.creator_id === userId);
+                    visibleBookings = data.bookings.filter(
+                        b => b.creator_id === userId && b.deleted === false
+                    );
                 }
 
                 setBookings(visibleBookings);
@@ -364,6 +366,8 @@ export default function Booking() {
                 setEquipmentRows([]);
                 setEditingId(null);
                 setShowForm(false);
+                window.location.reload(); // <-- reloads the page
+                return;
             } else {
                 alert(data.message || 'Booking failed');
             }
@@ -380,7 +384,7 @@ export default function Booking() {
 
 
         try {
-            const res = await fetch(`/api/delete-booking/${id}`, {
+            const res = await fetch(`http://localhost:5000/api/delete-booking/${id}`, {
                 method: 'PUT'
             });
             const data = await res.json();
@@ -388,6 +392,8 @@ export default function Booking() {
             if (data.success) {
                 alert('Booking marked as deleted');
                 // Refetch your bookings or remove from state
+                window.location.reload(); // <-- reloads the page
+                return;
             } else {
                 alert('Failed to update status');
             }

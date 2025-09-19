@@ -57,7 +57,7 @@
     DONE------->    personal color on calendar
     MODIFIED------->show only on public calendar approved and pending while pending has yellow color
     DONE------->    finish advanced booking parameter system for no conflicts
-        suggest equipment
+    DONE------->    suggest equipment
         
 
 DONE------->
