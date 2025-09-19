@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 export default function VehicleBooking() {
+    const [conflicts, setConflicts] = useState([]); // ⬅️ store conflicts
     const [showForm, setShowForm] = useState(true);
     const [bookings, setBookings] = useState([]);
     const [vehicleTypes, setVehicleTypes] = useState([]);
@@ -21,8 +22,7 @@ export default function VehicleBooking() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        const currentUserId = localStorage.getItem('currentUserId'); // ⬅️ get user ID
+        const currentUserId = localStorage.getItem('currentUserId');
 
         const newBooking = {
             vehicleType: form.vehicleType,
@@ -30,16 +30,35 @@ export default function VehicleBooking() {
             department: form.department,
             date: form.date,
             purpose: form.purpose,
-            booker_id: Number(currentUserId), // ⬅️ include this
+            booker_id: Number(currentUserId),
         };
 
+        let hasConflict = false;
+
+        try {
+            // check conflicts first
+            const res = await fetch(
+                `http://localhost:5000/api/vehicle-conflicts?vehicleType=${encodeURIComponent(form.vehicleType)}&date=${encodeURIComponent(form.date)}`
+            );
+            const data = await res.json();
+
+            if (data.success && data.bookings.length > 0 && editingId === null) {
+                hasConflict = true;
+                setConflicts(data.bookings); // ⬅️ show them
+            }
+        } catch (err) {
+            console.error("Error checking vehicle conflicts:", err);
+        }
+
+        if (hasConflict) {
+            alert("Conflict detected: This vehicle is already booked on that date.");
+            return;
+        }
 
         try {
             const res = await fetch('http://localhost:5000/api/vehicle-booking', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newBooking),
             });
 
@@ -54,6 +73,7 @@ export default function VehicleBooking() {
                     purpose: ''
                 });
                 setShowForm(false);
+                setConflicts([]); // clear
             } else {
                 alert(data.message || 'Failed to create vehicle booking');
             }
@@ -199,7 +219,10 @@ export default function VehicleBooking() {
                                     onChange={handleChange}
                                     className="w-full border rounded-lg px-4 py-2"
                                     required
+
                                 />
+
+
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">Date*</label>
@@ -236,7 +259,40 @@ export default function VehicleBooking() {
                                 Cancel
                             </button>
                         </div>
+                        {conflicts.length > 0 && (
+                            <div className="bg-red-50 border border-red-400 p-4 rounded-lg mt-4">
+                                <h3 className="text-lg font-bold text-red-700 mb-2">
+                                    ⚠️ Conflict: Vehicle already booked on {form.date}
+                                </h3>
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-red-200">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left text-xs font-bold">Vehicle</th>
+                                            <th className="px-4 py-2 text-left text-xs font-bold">Requestor</th>
+                                            <th className="px-4 py-2 text-left text-xs font-bold">Department</th>
+                                            <th className="px-4 py-2 text-left text-xs font-bold">Date</th>
+                                            <th className="px-4 py-2 text-left text-xs font-bold">Purpose</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-100">
+                                        {conflicts.map((c, i) => (
+                                            <tr key={i}>
+                                                <td className="px-4 py-2">{c.vehicle_Type}</td>
+                                                <td className="px-4 py-2">{c.requestor}</td>
+                                                <td className="px-4 py-2">{c.department}</td>
+                                                <td className="px-4 py-2">
+                                                    {new Date(c.date).toLocaleDateString('en-US')}
+                                                </td>
+                                                <td className="px-4 py-2">{c.purpose}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
                     </form>
+
                 )}
             </div>
 

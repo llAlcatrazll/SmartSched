@@ -21,19 +21,26 @@ export default function MyCalendar() {
 
     const statuses = ['All', 'approved', 'pending', 'rejected', 'rescheduled'];
     function renderEventContent(eventInfo) {
-        const bgColor = eventInfo.event.backgroundColor || '#96161C';
+        const bgColor = eventInfo.event.backgroundColor || '#FFD6A5';
+        const textColor = eventInfo.event.textColor || '#000';
+        const facility = eventInfo.event.extendedProps.facility;
         return (
             <div
                 className='w-full'
                 style={{
                     backgroundColor: bgColor,
                     padding: '2px 4px',
-                    borderRadius: '4px',
-                    color: eventInfo.event.textColor || '#fff',
-                    fontSize: '0.75rem'
+                    borderRadius: '6px',
+                    color: textColor,
+                    fontSize: '0.85rem',
+                    fontWeight: 500,
+                    border: `1px solid ${eventInfo.event.borderColor || bgColor}`
                 }}
             >
                 <b>{eventInfo.timeText && eventInfo.timeText}</b> {eventInfo.event.title}
+                {facility && (
+                    <span className="ml-2 text-xs font-semibold text-[#96161C]">({facility})</span>
+                )}
             </div>
         );
     }
@@ -45,25 +52,26 @@ export default function MyCalendar() {
                     const formatted = data.bookings.map(b => {
                         const dateOnly = b.event_date.split('T')[0]; // ensures YYYY-MM-DD only
                         // Set color based on status
-                        let bgColor = '#ff9f89';
-                        let borderColor = '#ff9f89';
+                        let bgColor = '#FFD6A5'; // pastel orange for "Other"
+                        let borderColor = '#FFD6A5';
                         let textColor = '#000000';
+
                         if (b.status === 'approved') {
-                            bgColor = '#4CAF50'; // green
-                            borderColor = '#4CAF50';
-                            textColor = '#fff';
+                            bgColor = '#A8E6CF'; // pastel green
+                            borderColor = '#A8E6CF';
+                            textColor = '#000000';
                         } else if (b.status === 'pending') {
-                            bgColor = '#FFC107'; // yellow
-                            borderColor = '#FFC107';
-                            textColor = '#000';
+                            bgColor = '#FFF9B0'; // pastel yellow
+                            borderColor = '#FFF9B0';
+                            textColor = '#000000';
                         } else if (b.status === 'rejected') {
-                            bgColor = '#F44336'; // red
-                            borderColor = '#F44336';
-                            textColor = '#fff';
+                            bgColor = '#FFB3B3'; // pastel red
+                            borderColor = '#FFB3B3';
+                            textColor = '#000000';
                         } else if (b.status === 'rescheduled') {
-                            bgColor = '#2196F3'; // blue
-                            borderColor = '#2196F3';
-                            textColor = '#fff';
+                            bgColor = '#B3E5FC'; // pastel blue
+                            borderColor = '#B3E5FC';
+                            textColor = '#000000';
                         }
                         return {
                             title: b.event_name || 'Untitled Event',
@@ -135,7 +143,7 @@ export default function MyCalendar() {
         setEvents(filtered);
     }, [filter, bookings]);
     // Unique values for dropdowns
-    // const facilities = Array.from(new Set(bookings.map(b => b.event_facility || b.facility || '').filter(Boolean)));
+    // const facilities = Array.from(new Set(bookings.map b => b.event_facility || b.facility || '').filter(Boolean)));
 
     return (
         <div className="flex flex-col gap-4">
@@ -228,14 +236,68 @@ export default function MyCalendar() {
                         Reset
                     </button>
                 </div>
+                {/* Legend for event colors */}
+                <div className="flex flex-wrap gap-3 items-center justify-center mt-3 mb-3 px-4 py-2 bg-[#f7f7f7] rounded-lg border border-[#e0e0e0]">
+                    <span className="font-semibold text-sm text-[#96161C] mr-2">Legend:</span>
+                    <span className="flex items-center gap-2 text-sm">
+                        <span style={{
+                            display: 'inline-block',
+                            width: 18,
+                            height: 18,
+                            background: '#A8E6CF', // pastel green
+                            borderRadius: 6,
+                            border: '1px solid #b2dfdb'
+                        }}></span>
+                        <span className="text-[#388e3c] font-medium">Approved</span>
+                    </span>
+                    <span className="flex items-center gap-2 text-sm">
+                        <span style={{
+                            display: 'inline-block',
+                            width: 18,
+                            height: 18,
+                            background: '#FFF9B0', // pastel yellow
+                            borderRadius: 6,
+                            border: '1px solid #ffe082'
+                        }}></span>
+                        <span className="text-[#fbc02d] font-medium">Pending</span>
+                    </span>
+                    <span className="flex items-center gap-2 text-sm">
+                        <span style={{
+                            display: 'inline-block',
+                            width: 18,
+                            height: 18,
+                            background: '#FFB3B3', // pastel red
+                            borderRadius: 6,
+                            border: '1px solid #ef9a9a'
+                        }}></span>
+                        <span className="text-[#d32f2f] font-medium">Rejected</span>
+                    </span>
+                    <span className="flex items-center gap-2 text-sm">
+                        <span style={{
+                            display: 'inline-block',
+                            width: 18,
+                            height: 18,
+                            background: '#B3E5FC', // pastel blue
+                            borderRadius: 6,
+                            border: '1px solid #81d4fa'
+                        }}></span>
+                        <span className="text-[#1976d2] font-medium">Rescheduled</span>
+                    </span>
+                    <span className="flex items-center gap-2 text-sm">
+                        <span style={{
+                            display: 'inline-block',
+                            width: 18,
+                            height: 18,
+                            background: '#FFD6A5', // pastel orange
+                            borderRadius: 6,
+                            border: '1px solid #ffcc80'
+                        }}></span>
+                        <span className="text-[#ff9800] font-medium">Other</span>
+                    </span>
+                </div>
             </div>
 
             <div className="w-full">
-                {/* <div className="bg-gray-100 border border-gray-300 p-4 rounded-md mb-4">
-                    <h2 className="font-bold text-sm mb-2">Fetched Bookings (Raw Preview)</h2>
-                    <pre className="text-xs overflow-x-auto max-h-[200px]">{JSON.stringify(bookings, null, 2)}</pre>
-                </div> */}
-
                 <FullCalendar
                     eventColor="#96161C"
                     plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}

@@ -93,6 +93,10 @@ app.use('/api/dashboard/recent-facility-transactions', require('./routes/dashboa
 app.use('/api/dashboard/recent-vehicle-transactions', require('./routes/dashboard/recentVehicleTransactions'));
 app.use('/api/vehicle/delete', deleteVehicleBooking);
 
+
+app.use('/api/vehicle-conflicts', require('./routes/booking/vehicleConflicts'));
+
+
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });

@@ -34,6 +34,7 @@ export default function Booking() {
     const [facilitySuggestions, setFacilitySuggestions] = useState([]);
     const [showFacilitySuggestions, setShowFacilitySuggestions] = useState(false);
     const location = useLocation();
+    const [conflictBooking, setConflictBooking] = useState(null);
 
 
     useEffect(() => {
@@ -237,18 +238,25 @@ export default function Booking() {
         if (!editingId) {
             try {
                 // Fetch bookings for this venue
-                const res = await fetch(`http://localhost:5000/api/fetch-booking-conflicts?venue=${encodeURIComponent(form.facility)}`);
+                const res = await fetch(
+                    `http://localhost:5000/api/fetch-booking-conflicts?venue=${encodeURIComponent(form.facility)}`
+                );
                 const data = await res.json();
+
                 if (data.success) {
                     console.log('Bookings for this venue:', data.bookings);
 
-                    // Check for date and time conflicts
-                    const newDate = form.date;
+                    // Take form date and increment by 1 (same way as your display code)
+                    const [year, month, day] = (form.date || '').split('-');
+                    const dateObj = new Date(`${year}-${month}-${day}`);
+                    dateObj.setDate(dateObj.getDate() - 1);
+                    const newDate = dateObj.toISOString().split('T')[0]; // YYYY-MM-DD
+
                     const newStart = form.startTime;
                     const newEnd = form.endTime;
 
                     function isTimeOverlap(startA, endA, startB, endB) {
-                        return (startA < endB && endA > startB);
+                        return startA < endB && endA > startB;
                     }
 
                     for (const b of data.bookings) {
@@ -256,12 +264,11 @@ export default function Booking() {
                         const bStart = b.starting_time || b.startTime || '';
                         const bEnd = b.ending_time || b.endTime || '';
 
-                        if (
-                            bDate === newDate &&
-                            isTimeOverlap(newStart, newEnd, bStart, bEnd)
-                        ) {
+                        if (bDate === newDate && isTimeOverlap(newStart, newEnd, bStart, bEnd)) {
                             isConflict = true;
-                            console.log('Conflict found with booking:', b);
+                            console.log("Conflict found with booking:", b);
+                            setConflictBooking(b);
+                            isConflict = true;
                             break;
                         }
                     }
@@ -278,6 +285,7 @@ export default function Booking() {
                 return;
             }
         }
+
 
         // Check if equipmentRows is empty or all equipment types are empty
         const hasEquipment = equipmentRows.some(eq => eq.type && eq.quantity);
@@ -366,7 +374,7 @@ export default function Booking() {
                 setEquipmentRows([]);
                 setEditingId(null);
                 setShowForm(false);
-                window.location.reload(); // <-- reloads the page
+                // window.location.reload(); // <-- reloads the page
                 return;
             } else {
                 alert(data.message || 'Booking failed');
@@ -809,8 +817,26 @@ export default function Booking() {
                             </button>
                         </div>
                     </form>
+
                 )}
             </div>
+            {conflictBooking && (
+                <div className="mt-6 p-4 border-2 border-red-500 rounded-lg bg-red-50">
+                    <h2 className="text-lg font-bold text-red-700 mb-2">
+                        ⚠️ Conflict Detected
+                    </h2>
+                    <div className="p-3 border rounded bg-white shadow">
+                        <p><strong>Event:</strong> {conflictBooking.event_name}</p>
+                        <p><strong>Date:</strong> {(conflictBooking.event_date || '').split('T')[0]}</p>
+                        <p><strong>Time:</strong> {conflictBooking.starting_time} - {conflictBooking.ending_time}</p>
+                        <p><strong>Venue:</strong> {conflictBooking.event_facility}</p>
+                        <p><strong>Organization:</strong> {conflictBooking.organization}</p>
+                        <p><strong>Requested By:</strong> {conflictBooking.requested_by}</p>
+                        <p><strong>Contact:</strong> {conflictBooking.contact}</p>
+                        <p><strong>Status:</strong> {conflictBooking.status}</p>
+                    </div>
+                </div>
+            )}
 
             {/* Bookings List */}
             <div className="bg-white rounded-xl shadow-md p-8 w-full mt-8">
@@ -974,11 +1000,25 @@ export default function Booking() {
                                                 const d = (b.event_date || b.date || '').split('T')[0];
                                                 if (!d) return '';
                                                 const [year, month, day] = d.split('-');
+
+                                                // create a Date object
                                                 const dateObj = new Date(`${year}-${month}-${day}`);
-                                                return dateObj.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+                                                // increment the day by 1
+                                                dateObj.setDate(dateObj.getDate() + 1);
+
+                                                // format as "October 1, 2025"
+                                                return dateObj.toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                });
                                             })()}
                                         </td>
 
+                                        {/* <td className="px-6 py-4 whitespace-nowrap">
+                                            {b.event_date ? b.event_date.split('T')[0] : ''}
+                                        </td> */}
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
                                             {(b.starting_time && b.ending_time)
                                                 ? `${formatTime(b.starting_time)} - ${formatTime(b.ending_time)}`
