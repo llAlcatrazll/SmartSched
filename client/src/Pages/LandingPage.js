@@ -147,10 +147,11 @@ export default function LandingPage() {
                         <button onClick={toggleSidebar} className="text-white">{isSidebarOpen ? <X /> : <Menu />}</button>
                     </div>
                     <img
-                        src={sidebarUser.avatar}
+                        src="https://i.pravatar.cc/150?img=6"
                         alt="Profile"
                         className={`rounded-full border-4 border-[#96161C] shadow-lg mb-2 ${isSidebarOpen ? 'w-20 h-20' : 'w-10 h-10'}`}
                     />
+
                     {isSidebarOpen && (
                         <>
                             <div className="text-lg font-bold text-white">{user?.name || 'User'}</div>

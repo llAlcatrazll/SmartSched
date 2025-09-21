@@ -10,6 +10,7 @@ const pool = new Pool({
     connectionString: process.env.DATABASE_URL
 });
 
+
 app.use(cors());
 app.use(express.json());
 
@@ -17,6 +18,11 @@ app.get('/api/test', async (req, res) => {
     const result = await pool.query('SELECT NOW()');
     res.json(result.rows[0]);
     console.log("object");
+});
+const authMiddleware = require("./middleware/auth");
+
+app.get("/api/protected", authMiddleware, (req, res) => {
+    res.json({ success: true, message: "Protected route", user: req.user });
 });
 
 // CHATBOT

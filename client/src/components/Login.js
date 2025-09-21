@@ -23,7 +23,8 @@ function Login() {
                 const userRole = data.user.role;
 
                 localStorage.setItem('currentUserId', userId);
-                localStorage.setItem('currentUserRole', userRole); // ✅ store the role
+                localStorage.setItem('currentUserRole', userRole);
+                localStorage.setItem("authToken", data.token); // ✅ save token
 
                 navigate('/landing');
             }
@@ -34,6 +35,7 @@ function Login() {
             setError('Server error');
         }
     };
+
 
     return (
         <div className="relative min-h-screen flex justify-center bg-white">
