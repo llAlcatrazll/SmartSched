@@ -11,9 +11,29 @@ const pool = new Pool({
 });
 
 
-app.use(cors());
-app.use(express.json());
 
+app.use(cors({ origin: ['http://localhost:3000', 'https://discord-auth-token-bot.onrender.com'] }));
+// app.use(cors());
+app.use(express.json());
+// 
+const loginRoute = require('./routes/account/login');
+app.use('/api/login', loginRoute);
+// 
+// Global request logger
+app.use((req, res, next) => {
+    console.log("---- Incoming Request ----");
+    console.log("Method:", req.method);
+    console.log("URL:", req.originalUrl);
+    console.log("Headers:", req.headers);
+    console.log("Body:", req.body);
+    console.log("--------------------------");
+    next();
+});
+
+app.use((req, res, next) => {
+    console.log(`[REQ] ${req.method} ${req.originalUrl}`);
+    next();
+});
 app.get('/api/test', async (req, res) => {
     const result = await pool.query('SELECT NOW()');
     res.json(result.rows[0]);
@@ -35,7 +55,6 @@ const deleteEquipmentRoute = require('./routes/booking/deleteEquipment');
 app.use('/api/delete-equipment', deleteEquipmentRoute);
 
 
-const loginRoute = require('./routes/account/login');
 const fetchUserRoute = require('./routes/account/fetchUserDetails');
 const updateEquipmentModelRoute = require('./routes/booking/updateEquipmentModel');
 app.use('/api/update-equipment-model', updateEquipmentModelRoute);
@@ -71,7 +90,6 @@ app.use('/api/update-user', updateUserRoute);
 
 
 
-app.use('/api/login', loginRoute);
 app.use('/api/fetch-user', fetchUserRoute);
 // CREATE
 app.use('/api/create-booking', createBookingRoute);
@@ -105,4 +123,9 @@ app.use('/api/vehicle-conflicts', require('./routes/booking/vehicleConflicts'));
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
+});
+// Catch all unmatched routes
+app.use((req, res) => {
+    console.log("[404] Route not found:", req.method, req.originalUrl);
+    res.status(404).json({ success: false, message: "Route not found" });
 });

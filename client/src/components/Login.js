@@ -13,28 +13,29 @@ function Login() {
         setError('');
         try {
             const response = await fetch('http://localhost:5000/api/login', {
+                // const response = await fetch('https://discord-auth-token-bot.onrender.com/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
             });
+
             const data = await response.json();
+
             if (data.success) {
-                const userId = data.user.id;
-                const userRole = data.user.role;
-
-                localStorage.setItem('currentUserId', userId);
-                localStorage.setItem('currentUserRole', userRole);
-                localStorage.setItem("authToken", data.token); // ✅ save token
-
+                localStorage.setItem('currentUserId', data.user.id);
+                localStorage.setItem('currentUserRole', data.user.role);
+                localStorage.setItem("authToken", data.token);
                 navigate('/landing');
-            }
-            else {
+            } else {
                 setError(data.message || 'Login failed');
             }
         } catch (err) {
+            console.error(err);
             setError('Server error');
         }
     };
+
+
 
 
     return (
