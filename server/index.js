@@ -11,7 +11,7 @@ const pool = new Pool({
 });
 
 
-
+// asdasd
 app.use(cors({ origin: ['http://localhost:3000', 'https://discord-auth-token-bot.onrender.com'] }));
 // app.use(cors());
 app.use(express.json());
