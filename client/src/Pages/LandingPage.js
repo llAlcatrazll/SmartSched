@@ -15,13 +15,13 @@ import UserManagement from '../Subpages/UserManagement';
 import ManageEquipment from '../Subpages/ManageEquipment';
 
 
-
-async function sendCohereChatMessage(message, bookings = [], currentDateTime) {
+// ✅ Updated helper — now handles both facility & vehicle bookings
+async function sendCohereChatMessage(message, bookingsPayload = {}, currentDateTime) {
     try {
         const response = await axios.post('http://localhost:5000/api/chatbot', {
             message,
-            bookings,
-            currentDateTime, // include timestamp in request body
+            bookings: bookingsPayload, // contains { facilities, vehicles }
+            currentDateTime,
         });
         return response.data.reply;
     } catch (error) {
@@ -32,29 +32,25 @@ async function sendCohereChatMessage(message, bookings = [], currentDateTime) {
 
 
 export default function LandingPage() {
+    // ===== State =====
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isFacilityOpen, setIsFacilityOpen] = useState(true);
     const [isVehicleOpen, setIsVehicleOpen] = useState(true);
     const [showFacilityBreakdown, setShowFacilityBreakdown] = useState(false);
     const [isBotTyping, setIsBotTyping] = useState(false);
     const [showChatbot, setShowChatbot] = useState(false);
-    const toggleChatBot = () => setShowChatbot(!showChatbot);
     const [chatInput, setChatInput] = useState('');
     const [chatMessages, setChatMessages] = useState([
         { from: 'bot', text: 'Hi! How can I help you today?' }
     ]);
-    const [bookings, setBookings] = useState([]);
-    const [sidebarUser, setSidebarUser] = useState({ name: '', role: '', avatar: '', email: '', contact: '', affiliation: '' });
-    const [user, setUser] = useState(null);
-    const formattedBookings = bookings.map((b) => ({
-        name: b.event_name,
-        facility: b.event_facility,
-        date: b.event_date.split('T')[0], // "2025-08-04"
-        startTime: b.starting_time,
-        endTime: b.ending_time,
-        requestedBy: b.requested_by,
-    }));
 
+    const [bookings, setBookings] = useState([]);
+    const [vehicleBookings, setVehicleBookings] = useState([]);
+    const [user, setUser] = useState(null);
+
+    const toggleChatBot = () => setShowChatbot(!showChatbot);
+
+    // ===== Chat send handler =====
     const handleSendChat = async () => {
         if (!chatInput.trim()) return;
 
@@ -65,14 +61,39 @@ export default function LandingPage() {
 
         const currentDateTime = new Date().toLocaleString('en-US', {
             dateStyle: 'full',
-            timeStyle: 'short'
-        }); // e.g., "Thursday, August 7, 2025 at 10:15 PM"
+            timeStyle: 'short',
+        });
 
+        // Format facility bookings
+        const formattedBookings = bookings.map((b) => ({
+            name: b.event_name,
+            facility: b.event_facility,
+            date: b.event_date?.split('T')[0],
+            startTime: b.starting_time,
+            endTime: b.ending_time,
+            requestedBy: b.requested_by,
+        }));
+
+        // Format vehicle bookings
+        const formattedVehicleBookings = vehicleBookings.map((v) => ({
+            vehicle_Type: v.vehicle_Type,
+            requestor: v.requestor,
+            department: v.department,
+            date: v.date,
+            purpose: v.purpose,
+        }));
+
+        // Combine both
+        const bookingsPayload = {
+            facilities: formattedBookings,
+            vehicles: formattedVehicleBookings,
+        };
 
         try {
-            const response = await sendCohereChatMessage(chatInput, formattedBookings, currentDateTime);
+            const response = await sendCohereChatMessage(chatInput, bookingsPayload, currentDateTime);
             setChatMessages([...newMessages, { from: 'ai', text: response }]);
         } catch (err) {
+            console.error('Chatbot error:', err);
             setChatMessages([...newMessages, { from: 'ai', text: 'Something went wrong. Try again.' }]);
         } finally {
             setIsBotTyping(false);
@@ -80,38 +101,66 @@ export default function LandingPage() {
     };
 
 
+    // ===== Data fetching =====
     useEffect(() => {
         const userId = Number(localStorage.getItem('currentUserId'));
         if (!userId) return;
+
+        // Facility bookings
         fetch('http://localhost:5000/api/fetch-bookings')
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    console.log('Bookings fetched:', data.bookings);
+                if (data.success && data.bookings) {
+                    console.log('Facility bookings fetched:', data.bookings);
                     setBookings(data.bookings);
                 }
-            });
+            })
+            .catch(err => console.error('Error fetching facility bookings:', err));
+
+        // Vehicle bookings
+        // fetch('http://localhost:5000/api/fetch-vehicles')
+        //     .then(res => res.json())
+        //     .then(data => {
+        //         if (data.success && data.vehicles) {
+        //             console.log('Vehicle bookings fetched:', data.vehicles);
+        //             setVehicleBookings(data.vehicles);
+        //         }
+        //     })
+        //     .catch(err => console.error('Error fetching vehicle bookings:', err));
+        fetch('http://localhost:5000/api/fetch-vehicles')
+            .then(res => res.json())
+            .then(data => {
+                console.log('Raw vehicle response:', data);
+                const vehicles = Array.isArray(data) ? data : data.vehicles;
+                if (vehicles && vehicles.length > 0) {
+                    console.log('Vehicle bookings fetched:', vehicles);
+                    setVehicleBookings(vehicles);
+                } else {
+                    console.warn('No vehicle data found', data);
+                }
+            })
+            .catch(err => console.error('Error fetching vehicle bookings:', err));
+
+        // User
         fetch(`http://localhost:5000/api/fetch-user/${userId}`)
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    setUser(data.user);
-                }
-            });
+                if (data.success) setUser(data.user);
+            })
+            .catch(err => console.error('Error fetching user:', err));
 
     }, []);
 
+
+    // ===== Admin toggle =====
     useEffect(() => {
         const storedRole = localStorage.getItem('currentUserRole');
-        if (storedRole === 'admin') {
-            setShowFacilityBreakdown(true);
-        }
+        if (storedRole === 'admin') setShowFacilityBreakdown(true);
     }, []);
 
-    const [activePage, setActivePage] = useState(() => {
-        return localStorage.getItem('activePage') || 'dashboard';
-    });
 
+    // ===== Sidebar handling =====
+    const [activePage, setActivePage] = useState(localStorage.getItem('activePage') || 'dashboard');
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
     const handleLogout = () => window.location.href = '/';
     const handleSetActivePage = (page) => {
@@ -119,6 +168,8 @@ export default function LandingPage() {
         localStorage.setItem('activePage', page);
     };
 
+
+    // ===== Dynamic Page Rendering =====
     let RenderedPage;
     switch (activePage) {
         case 'dashboard': RenderedPage = <Dashboard bookings={bookings} />; break;
@@ -131,6 +182,8 @@ export default function LandingPage() {
         case 'manage-equipment': RenderedPage = <ManageEquipment />; break;
         default: RenderedPage = <Dashboard />;
     }
+
+    // ===== JSX =====
     return (
         <div className="flex min-h-screen bg-gray-100">
             {/* Sidebar */}
@@ -141,9 +194,10 @@ export default function LandingPage() {
                     overflow-y-auto fixed top-0 left-0 h-screen z-20
                 `}
             >
+                {/* Sidebar Header */}
                 <div className="flex flex-col items-center mb-8">
                     <div className="flex items-center justify-between w-full mb-4 pr-4">
-                        <span className={`text-[#ffa7a7] font-bold tracking-widest text-lg ${!isSidebarOpen && 'hidden'}`}>{user?.role.toUpperCase()}</span>
+                        <span className={`text-[#ffa7a7] font-bold tracking-widest text-lg ${!isSidebarOpen && 'hidden'}`}>{user?.role?.toUpperCase() || 'USER'}</span>
                         <button onClick={toggleSidebar} className="text-white">{isSidebarOpen ? <X /> : <Menu />}</button>
                     </div>
                     <img
@@ -155,11 +209,12 @@ export default function LandingPage() {
                     {isSidebarOpen && (
                         <>
                             <div className="text-lg font-bold text-white">{user?.name || 'User'}</div>
-                            <div className="text-sm font-bold text-[#ffa7a7] tracking-widest">{user?.affiliation || 'asd'}</div>
+                            <div className="text-sm font-bold text-[#ffa7a7] tracking-widest">{user?.affiliation || ''}</div>
                         </>
                     )}
                 </div>
 
+                {/* Sidebar Items */}
                 <nav className="flex flex-col gap-4 text-white">
                     {showFacilityBreakdown && (
                         <SidebarItem icon={<Home size={20} />} label="Dashboard" open={isSidebarOpen} onClick={() => handleSetActivePage('dashboard')} />
@@ -169,6 +224,7 @@ export default function LandingPage() {
                         <SidebarItem icon={<User size={20} />} label="User Management" open={isSidebarOpen} onClick={() => handleSetActivePage('user-management')} />
                     )}
 
+                    {/* Facility Section */}
                     {isSidebarOpen && (
                         <>
                             <button onClick={() => setIsFacilityOpen(!isFacilityOpen)} className="px-2 pt-4 text-xs font-bold text-[#ffa7a7] uppercase tracking-wider text-left w-full">
@@ -186,6 +242,7 @@ export default function LandingPage() {
                         </>
                     )}
 
+                    {/* Vehicle Section */}
                     {isSidebarOpen && (
                         <>
                             <button onClick={() => setIsVehicleOpen(!isVehicleOpen)} className="px-2 pt-4 text-xs font-bold text-[#ffa7a7] uppercase tracking-wider text-left w-full">
@@ -204,7 +261,8 @@ export default function LandingPage() {
                 </nav>
             </div>
 
-            <div className={`flex-1 p-6 ml-${isSidebarOpen ? '64' : '16'} transition-all duration-300`} style={{ marginLeft: isSidebarOpen ? '16rem' : '4rem' }}>
+            {/* Main Content */}
+            <div className={`flex-1 p-6 transition-all duration-300`} style={{ marginLeft: isSidebarOpen ? '16rem' : '4rem' }}>
                 {RenderedPage}
             </div>
 
@@ -220,37 +278,26 @@ export default function LandingPage() {
 
             {/* Chatbot Interface */}
             {showChatbot && (
-                <div className="fixed bottom-20 right-6 w-[520px] h-[550px] bg-white border rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden">
+                <div className="fixed bottom-20 right-6 w-[820px] h-[650px] bg-white border rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden">
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b bg-[#96161C] text-white">
                         <h2 className="font-semibold text-lg">Booking Assistant</h2>
-                        <button
-                            onClick={() => setShowChatbot(false)}
-                            className="text-white hover:text-gray-300"
-                        >
-                            ✖
-                        </button>
+                        <button onClick={() => setShowChatbot(false)} className="text-white hover:text-gray-300">✖</button>
                     </div>
 
                     {/* Messages */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
                         {chatMessages.map((msg, index) => (
-                            <div
-                                key={index}
-                                className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}
-                            >
-                                <div
-                                    className={`px-4 py-2 rounded-lg text-sm max-w-[70%] break-words
-                            ${msg.from === 'user'
-                                            ? 'bg-blue-600 text-white rounded-br-none'
-                                            : 'bg-gray-200 text-gray-800 rounded-bl-none'}`}
-                                >
+                            <div key={index} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`px-4 py-2 rounded-lg text-sm max-w-[70%] break-words whitespace-pre-line
+                                    ${msg.from === 'user'
+                                        ? 'bg-blue-600 text-white rounded-br-none'
+                                        : 'bg-gray-200 text-gray-800 rounded-bl-none'}`}>
                                     {msg.text}
                                 </div>
                             </div>
                         ))}
 
-                        {/* Typing indicator */}
                         {isBotTyping && (
                             <div className="flex justify-start">
                                 <div className="px-4 py-2 text-sm bg-gray-200 text-gray-600 rounded-lg animate-pulse">
@@ -268,9 +315,7 @@ export default function LandingPage() {
                             placeholder="Type your message..."
                             value={chatInput}
                             onChange={(e) => setChatInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleSendChat();
-                            }}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
                         />
                         <button
                             onClick={handleSendChat}
@@ -281,17 +326,16 @@ export default function LandingPage() {
                     </div>
                 </div>
             )}
-
         </div>
     );
 }
 
-// Reusable Sidebar Item
+
+// ✅ Reusable Sidebar Item
 const SidebarItem = ({ icon, label, open, onClick }) => (
     <div
         className="flex items-center gap-3 px-2 py-2 rounded-md cursor-pointer transition hover:bg-white/20 hover:text-white active:bg-white/30"
         onClick={onClick}
-        style={{ color: 'inherit' }}
     >
         {icon}
         {open && <span className="text-sm">{label}</span>}

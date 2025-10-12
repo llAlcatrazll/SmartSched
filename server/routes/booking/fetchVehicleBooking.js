@@ -16,6 +16,7 @@ router.get('/', async (req, res) => {
         console.error('Fetch vehicle bookings error:', err);
         res.status(500).json({ message: 'Server error fetching vehicle bookings' });
     }
+    console.log("Fetched vehicle rows:", rows);
 });
 
 
