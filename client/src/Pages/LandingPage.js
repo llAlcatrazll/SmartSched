@@ -117,16 +117,6 @@ export default function LandingPage() {
             })
             .catch(err => console.error('Error fetching facility bookings:', err));
 
-        // Vehicle bookings
-        // fetch('http://localhost:5000/api/fetch-vehicles')
-        //     .then(res => res.json())
-        //     .then(data => {
-        //         if (data.success && data.vehicles) {
-        //             console.log('Vehicle bookings fetched:', data.vehicles);
-        //             setVehicleBookings(data.vehicles);
-        //         }
-        //     })
-        //     .catch(err => console.error('Error fetching vehicle bookings:', err));
         fetch('http://localhost:5000/api/fetch-vehicles')
             .then(res => res.json())
             .then(data => {
