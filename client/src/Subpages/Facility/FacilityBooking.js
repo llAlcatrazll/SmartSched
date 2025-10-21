@@ -35,7 +35,7 @@ export default function Booking() {
     const [showFacilitySuggestions, setShowFacilitySuggestions] = useState(false);
     const location = useLocation();
     const [conflictBooking, setConflictBooking] = useState(null);
-
+    const [UserisNotAdmin, setUserisNotAdmin] = useState(false);
 
     useEffect(() => {
         const storedRole = localStorage.getItem('currentUserRole');
@@ -153,11 +153,17 @@ export default function Booking() {
 
                 if (user.role === 'admin') {
                     visibleBookings = data.bookings.filter(b => b.deleted === false);
+                    setUserisNotAdmin(false);
                 } else if (user.role === 'user') {
-                    visibleBookings = data.bookings.filter(
-                        b => b.creator_id === userId && b.deleted === false
-                    );
+                    setUserisNotAdmin(true);
+                    // default false
+                    visibleBookings = data.bookings.filter(b => b.deleted === false);
                 }
+                // } else if (user.role === 'user') {
+                //     visibleBookings = data.bookings.filter(
+                //         b => b.creator_id === userId && b.deleted === false
+                //     );
+                // }
 
                 setBookings(visibleBookings);
 
@@ -226,7 +232,8 @@ export default function Booking() {
 
     const handleFilterChange = e => setFilter({ ...filter, [e.target.name]: e.target.value });
     const currentUserId = localStorage.getItem('currentUserId');
-    const isConflict = false;
+    const currentUserRole = localStorage.getItem('currentUserRole');
+    // const isConflict = false;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -410,6 +417,29 @@ export default function Booking() {
             alert('Server error');
         }
     };
+
+    const cancelBooking = async (id) => {
+        if (!window.confirm('Are you sure you want to cancel this Booking??')) return;
+
+        try {
+            const res = await fetch(`http://localhost:5000/api/cancel-booking/${id}`, {
+                method: 'PUT'
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                alert('Booking marked as cancelled');
+                // Refetch your bookings or remove from state
+                window.location.reload(); // <-- reloads the page
+                return;
+            } else {
+                alert('Failed to update status');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Server error');
+        }
+    }
 
 
 
@@ -975,9 +1005,7 @@ export default function Booking() {
                                     </>
                                 )}
                                 <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">Status</th>
-                                {showFacilityBreakdown && (
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tr-xl">Actions</th>
-                                )}
+                                <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tr-xl">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -987,11 +1015,33 @@ export default function Booking() {
                                 </tr>
                             ) : (
                                 paginated.map((b, idx) => (
+
                                     <tr
                                         key={b.id || idx}
                                         className={`transition hover:bg-[#f8eaea] ${idx % 2 === 0 ? 'bg-white' : 'bg-[#fde8e8]'}`}>
                                         {/*  */}
-                                        <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#96161C]">{b.event_name || b.title}</td>
+
+                                        {/* CHECK USER ROLE */}
+                                        {UserisNotAdmin ?
+                                            // TRUE
+                                            // USER IS NOT ADMIN
+                                            ((parseInt(b.creator_id) === parseInt(currentUserId)) ?
+                                                // USER'S OWN BOOKING
+                                                <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#a31d23]" >{b.event_name || b.title}</td>
+                                                :
+                                                // OTHER USER ANONYMOUS BOOKINGS
+                                                <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#daa7aa]" >Hidden</td>
+                                            )
+
+
+
+                                            :
+                                            // FALSE
+                                            // IS ADMIN
+                                            <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#a31d23]" >{b.event_name || b.title}</td>}
+
+                                        {/* DEBUG USER ROLE AND ID AND BOOKING ID */}
+                                        {/* <td>{b.creator_id + currentUserId + currentUserRole}</td> */}
                                         {/*  */}
                                         <td className="px-6 py-4 whitespace-nowrap">{b.event_facility || b.facility || '-'}</td>
                                         {/*  */}
@@ -1025,7 +1075,16 @@ export default function Booking() {
                                                 : b.time}
                                         </td>
 
-                                        <td className="px-6 py-4 whitespace-nowrap">{b.organization || b.org || '-'}</td>
+                                        {UserisNotAdmin ?
+
+                                            ((parseInt(b.creator_id) === parseInt(currentUserId)) ?
+                                                <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#a31d23]" >{b.organization}</td>
+                                                :
+                                                <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#daa7aa]" >Hidden</td>
+                                            )
+                                            :
+                                            <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#a31d23]" >{b.organization}</td>}
+                                        {/* <td className="px-6 py-4 whitespace-nowrap">{b.organization || b.org || '-'}</td> */}
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                             {equipmentMap[b.id]?.length > 0 ? (
                                                 <ul className="list-disc list-inside space-y-1">
@@ -1040,66 +1099,136 @@ export default function Booking() {
 
                                         {showRequesterInfo && (
                                             <>
-                                                <td className="px-6 py-4 whitespace-nowrap">{b.requested_by || b.requestedBy || '-'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{b.contact || '-'}</td>
+                                                {UserisNotAdmin ?
+
+                                                    ((parseInt(b.creator_id) === parseInt(currentUserId)) ?
+                                                        <td className="px-6 py-4 whitespace-nowrap " >{b.requested_by}</td>
+                                                        :
+                                                        <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#daa7aa]" >Hidden</td>
+                                                    )
+                                                    :
+                                                    <td className="px-6 py-4 whitespace-nowrap  " >{b.requested_by}</td>}
+                                                {/* <td className="px-6 py-4 whitespace-nowrap">{b.requested_by || b.requestedBy || '-'}</td> */}
+                                                {/* <td className="px-6 py-4 whitespace-nowrap">{b.contact || '-'}</td> */}
+
+                                                {UserisNotAdmin ?
+
+                                                    ((parseInt(b.creator_id) === parseInt(currentUserId)) ?
+                                                        <td className="px-6 py-4 whitespace-nowrap  " >{b.contact}</td>
+                                                        :
+                                                        <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#daa7aa]" >Hidden</td>
+                                                    )
+                                                    :
+                                                    <td className="px-6 py-4 whitespace-nowrap " >{b.contact}</td>}
                                             </>
                                         )}
-                                        <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleStatusClick(idx)}>
-                                            {editStatusIndex === idx ? (
-                                                <select
-                                                    value={b.status}
-                                                    onChange={(e) => handleStatusChange(idx, e.target.value, b.id)}
-                                                    onBlur={() => setEditStatusIndex(null)}
-                                                    autoFocus
-                                                    className="text-xs px-3 py-1 border rounded-full focus:ring-2 focus:ring-[#96161C] font-bold shadow"
-                                                    style={{ minWidth: 120 }}
-                                                >
-                                                    <option value="" disabled className="text-gray-400">Select status</option>
-                                                    <option value="Pending" style={{ background: '#FEF3C7', color: '#B45309', fontWeight: 'bold' }}>Pending</option>
-                                                    <option value="Approved" style={{ background: '#D1FAE5', color: '#047857', fontWeight: 'bold' }}>Approved</option>
-                                                    <option value="Declined" style={{ background: '#FECACA', color: '#B91C1C', fontWeight: 'bold' }}>Declined</option>
-                                                    <option value="Rescheduled" style={{ background: '#DBEAFE', color: '#1D4ED8', fontWeight: 'bold' }}>Rescheduled</option>
-                                                </select>
-                                            ) : (
-                                                <span
-                                                    className={`px-3 py-1 rounded-full text-xs font-bold shadow
+                                        {UserisNotAdmin ?
+                                            <td> <span
+                                                className={`px-3 py-1 rounded-full text-xs font-bold shadow
                                                         ${b.status === 'approved'
-                                                            ? 'bg-green-100 text-green-700 border border-green-300'
-                                                            : b.status === 'pending'
-                                                                ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                                                                : b.status === 'declined'
-                                                                    ? 'bg-red-100 text-red-700 border border-red-300'
-                                                                    : b.status === 'rescheduled'
-                                                                        ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                                                                        : 'bg-gray-100 text-gray-700 border border-gray-300'
-                                                        }`}
+                                                        ? 'bg-green-100 text-green-700 border border-green-300'
+                                                        : b.status === 'pending'
+                                                            ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                                                            : b.status === 'declined'
+                                                                ? 'bg-red-100 text-red-700 border border-red-300'
+                                                                : b.status === 'rescheduled'
+                                                                    ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                                                    : 'bg-gray-100 text-gray-700 border border-gray-300'
+                                                    }`}
+                                            >
+                                                {b.status || 'Pending'}
+                                            </span></td>
+                                            :
+                                            <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleStatusClick(idx)}>
+                                                {editStatusIndex === idx ? (
+                                                    <select
+                                                        value={b.status}
+                                                        onChange={(e) => handleStatusChange(idx, e.target.value, b.id)}
+                                                        onBlur={() => setEditStatusIndex(null)}
+                                                        autoFocus
+                                                        className="text-xs px-3 py-1 border rounded-full focus:ring-2 focus:ring-[#96161C] font-bold shadow"
+                                                        style={{ minWidth: 120 }}
+                                                    >
+                                                        <option value="" disabled className="text-gray-400">Select status</option>
+                                                        <option value="Pending" style={{ background: '#FEF3C7', color: '#B45309', fontWeight: 'bold' }}>Pending</option>
+                                                        <option value="Approved" style={{ background: '#D1FAE5', color: '#047857', fontWeight: 'bold' }}>Approved</option>
+                                                        <option value="Declined" style={{ background: '#FECACA', color: '#B91C1C', fontWeight: 'bold' }}>Declined</option>
+                                                        <option value="Rescheduled" style={{ background: '#DBEAFE', color: '#1D4ED8', fontWeight: 'bold' }}>Rescheduled</option>
+                                                    </select>
+                                                ) : (
+                                                    <span
+                                                        className={`px-3 py-1 rounded-full text-xs font-bold shadow
+                                                        ${b.status === 'approved'
+                                                                ? 'bg-green-100 text-green-700 border border-green-300'
+                                                                : b.status === 'pending'
+                                                                    ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                                                                    : b.status === 'declined'
+                                                                        ? 'bg-red-100 text-red-700 border border-red-300'
+                                                                        : b.status === 'rescheduled'
+                                                                            ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                                                            : 'bg-gray-100 text-gray-700 border border-gray-300'
+                                                            }`}
+                                                    >
+                                                        {b.status || 'Pending'}
+                                                    </span>
+                                                )}
+                                            </td>
+                                        }
+
+                                        <td className="px-6 py-4 whitespace-nowrap text-right flex gap-2 justify-center">
+                                            <div className='group relative inline-block'>
+                                                {UserisNotAdmin ?
+
+                                                    ((parseInt(b.creator_id) === parseInt(currentUserId)) ?
+                                                        <button
+                                                            onClick={() => cancelBooking(b.id)} // assuming b.id is the primary key
+                                                            className="text-red-600 hover:text-red-800 transition"
+                                                            title="Cancel Booking"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-off-icon lucide-circle-off"><path d="m2 2 20 20" /><path d="M8.35 2.69A10 10 0 0 1 21.3 15.65" /><path d="M19.08 19.08A10 10 0 1 1 4.92 4.92" /></svg>
+                                                            <div className='opacity-0 bottom-full left-1/2 -translate-x-1/2 mb-2 absolute group-hover:opacity-100 text-sm'>
+                                                                Cancle Booking
+                                                            </div>
+                                                        </button>
+                                                        :
+                                                        <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#daa7aa]" >Hidden</td>
+                                                    )
+                                                    :
+                                                    <button
+                                                        onClick={() => cancelBooking(b.id)} // assuming b.id is the primary key
+                                                        className="text-red-600 hover:text-red-800 transition"
+                                                        title="Cancel Booking"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-off-icon lucide-circle-off"><path d="m2 2 20 20" /><path d="M8.35 2.69A10 10 0 0 1 21.3 15.65" /><path d="M19.08 19.08A10 10 0 1 1 4.92 4.92" /></svg>
+                                                        <div className='opacity-0 bottom-full left-1/2 -translate-x-1/2 mb-2 absolute group-hover:opacity-100 text-sm'>
+                                                            Cancle Booking
+                                                        </div>
+                                                    </button>}
+
+                                            </div>
+                                            {showFacilityBreakdown &&
+                                                (<button
+                                                    onClick={() => handleEdit(b)}
+                                                    className="text-[#96161C] hover:text-[#7a1217] transition"
+                                                    title="Edit Booking"
                                                 >
-                                                    {b.status || 'Pending'}
-                                                </span>
-                                            )}
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path d="M17.414 2.586a2 2 0 010 2.828L8.414 14.414l-4.828 1.414 1.414-4.828L14.586 2.586a2 2 0 012.828 0z" />
+                                                    </svg>
+                                                </button>)
+                                            }
+                                            {showFacilityBreakdown &&
+                                                <button
+                                                    onClick={() => handleDelete(b.id)} // assuming b.id is the primary key
+                                                    className="text-red-600 hover:text-red-800 transition"
+                                                    title="Delete Booking"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M9 3v1H4v2h16V4h-5V3H9zm1 5v12h2V8h-2zm4 0v12h2V8h-2z" />
+                                                    </svg>
+                                                </button>
+                                            }
                                         </td>
-
-                                        {showFacilityBreakdown && (<td className="px-6 py-4 whitespace-nowrap text-right flex gap-2 justify-end">
-                                            <button
-                                                onClick={() => handleEdit(b)}
-                                                className="text-[#96161C] hover:text-[#7a1217] transition"
-                                                title="Edit Booking"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path d="M17.414 2.586a2 2 0 010 2.828L8.414 14.414l-4.828 1.414 1.414-4.828L14.586 2.586a2 2 0 012.828 0z" />
-                                                </svg>
-                                            </button>
-
-                                            <button
-                                                onClick={() => handleDelete(b.id)} // assuming b.id is the primary key
-                                                className="text-red-600 hover:text-red-800 transition"
-                                                title="Delete Booking"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block" fill="currentColor" viewBox="0 0 24 24">
-                                                    <path d="M9 3v1H4v2h16V4h-5V3H9zm1 5v12h2V8h-2zm4 0v12h2V8h-2z" />
-                                                </svg>
-                                            </button>
-                                        </td>)}
 
 
                                     </tr>

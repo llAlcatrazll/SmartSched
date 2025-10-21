@@ -62,6 +62,7 @@ app.use('/api/update-equipment-model', updateEquipmentModelRoute);
 const createBookingRoute = require('./routes/booking/createBooking');
 const deleteBookingRoute = require('./routes/booking/deleteBooking');
 const fetchBookingRoute = require('./routes/booking/fetchBooking');
+const cancelBookingRoute = require('./routes/booking/cancelBooking');
 const editBookingRoute = require('./routes/booking/editBooking');
 // const fetchVehiclesRoute = require('./routes/booking/fetchVehicles');
 const createequipmentRoute = require('./routes/booking/createequipment');
@@ -97,6 +98,8 @@ app.use('/api/vehicle-booking', vehicleBookingRoute);
 app.use('/api/create-equipment', createequipmentRoute);
 // UPDATE
 app.use('/api/update-booking-status', updateBookingStatusRoute);
+// CANCEL
+app.use('./api/cancel-booking', cancelBookingRoute);
 // DELETE
 app.use('/api/delete-booking', deleteBookingRoute);
 // FETCH

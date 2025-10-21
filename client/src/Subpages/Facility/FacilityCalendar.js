@@ -51,6 +51,9 @@ export default function MyCalendar() {
                 if (data.success) {
                     const formatted = data.bookings.map(b => {
                         const dateOnly = b.event_date.split('T')[0]; // ensures YYYY-MM-DD only
+                        const dateObj = new Date(dateOnly);
+                        dateObj.setDate(dateObj.getDate() + 1);
+                        const NewDate = dateObj.toISOString().split('T')[0];
                         // Set color based on status
                         let bgColor = '#FFD6A5'; // pastel orange for "Other"
                         let borderColor = '#FFD6A5';
@@ -75,8 +78,8 @@ export default function MyCalendar() {
                         }
                         return {
                             title: b.event_name || 'Untitled Event',
-                            start: `${dateOnly}T${b.starting_time}`,
-                            end: `${dateOnly}T${b.ending_time}`,
+                            start: `${NewDate}T${b.starting_time}`,
+                            end: `${NewDate}T${b.ending_time}`,
                             backgroundColor: bgColor,
                             borderColor: borderColor,
                             textColor: textColor,
