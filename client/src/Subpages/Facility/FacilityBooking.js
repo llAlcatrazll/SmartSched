@@ -626,9 +626,10 @@ export default function Booking() {
                                         onChange={e => {
                                             const value = e.target.value;
                                             setForm(prev => ({ ...prev, facility: value }));
+
                                             if (value.length > 0) {
-                                                const suggestions = facilityList.filter(
-                                                    f => f.toLowerCase().includes(value.toLowerCase())
+                                                const suggestions = facilityList.filter(f =>
+                                                    f.facility.toLowerCase().includes(value.toLowerCase())
                                                 );
                                                 setFacilitySuggestions(suggestions);
                                                 setShowFacilitySuggestions(true);
@@ -645,22 +646,27 @@ export default function Booking() {
                                         required
                                         autoComplete="off"
                                     />
+
                                     {showFacilitySuggestions && facilitySuggestions.length > 0 && (
-                                        <ul className="absolute z-10 bg-white border border-gray-200 rounded shadow-md mt-1 max-h-48 overflow-y-auto w-full">
-                                            {facilitySuggestions.map((f, idx) => (
+                                        <ul className="absolute bg-white border mt-1 rounded-lg w-full max-h-48 overflow-y-auto z-10">
+                                            {facilitySuggestions.map((f, i) => (
                                                 <li
-                                                    key={idx}
-                                                    className="px-4 py-2 hover:bg-[#fde8e8] cursor-pointer"
+                                                    key={i}
+                                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                                                     onMouseDown={() => {
-                                                        setForm(prev => ({ ...prev, facility: f }));
+                                                        setForm(prev => ({ ...prev, facility: f.facility }));
                                                         setShowFacilitySuggestions(false);
                                                     }}
                                                 >
-                                                    {f}
+                                                    {f.facility}
+                                                    <span className="text-gray-500 text-sm ml-2">
+                                                        ({f.capacity}+{f.equipment})
+                                                    </span>
                                                 </li>
                                             ))}
                                         </ul>
                                     )}
+
                                 </div>
                             </div>
                         </div>
