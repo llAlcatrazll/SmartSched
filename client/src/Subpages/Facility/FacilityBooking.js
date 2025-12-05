@@ -134,8 +134,44 @@ export default function Booking() {
         const storedUserRole = localStorage.getItem('currentUserRole');
 
         if (storedUserId && storedUserRole) {
-            setUser({ id: parseInt(storedUserId), role: storedUserRole });
-            setUserId(parseInt(storedUserId));
+            (async () => {
+                try {
+                    // try common API shapes
+                    let res = await fetch(`http://localhost:5000/api/fetch-user/${storedUserId}`);
+                    if (!res.ok) res = await fetch(`http://localhost:5000/api/fetch-user?id=${storedUserId}`);
+                    if (!res.ok) res = await fetch(`http://localhost:5000/api/users/${storedUserId}`);
+
+                    const data = await res.json();
+                    if (data && data.success && data.user) {
+                        const u = data.user;
+                        const rawAff =
+                            u.affiliations ||
+                            u.affiliation ||
+                            u.affiliation_list ||
+                            u.affiliationIds ||
+                            '';
+
+                        let affiliations = [];
+                        if (Array.isArray(rawAff)) {
+                            affiliations = rawAff.map(String).map(s => s.trim()).filter(Boolean);
+                        } else if (typeof rawAff === 'string' && rawAff.trim()) {
+                            affiliations = rawAff.split(',').map(s => s.trim()).filter(Boolean);
+                        }
+
+                        const hydrated = { ...u, affiliations };
+                        setUser(hydrated);
+                        localStorage.setItem('currentUser', JSON.stringify(hydrated));
+                    } else {
+                        // fallback to minimal user with empty affiliations
+                        setUser({ id: parseInt(storedUserId, 10), role: storedUserRole, affiliations: [] });
+                    }
+                } catch (err) {
+                    console.error('Error fetching user:', err);
+                    setUser({ id: parseInt(storedUserId, 10), role: storedUserRole, affiliations: [] });
+                } finally {
+                    setUserId(parseInt(storedUserId, 10));
+                }
+            })();
         }
     }, []);
     useEffect(() => {
@@ -153,18 +189,19 @@ export default function Booking() {
 
                 if (user.role === 'admin') {
                     visibleBookings = data.bookings.filter(b => b.deleted === false);
-                    setUserisNotAdmin(false);
+                    setUserisNotAdmin(false)
                 } else if (user.role === 'user') {
                     setUserisNotAdmin(true);
                     // default false
                     visibleBookings = data.bookings.filter(b => b.deleted === false);
                 }
-                // } else if (user.role === 'user') {
-                //     visibleBookings = data.bookings.filter(
-                //         b => b.creator_id === userId && b.deleted === false
-                //     );
-                // }
-
+                else if (user.role === 'owner') {
+                    console.log(user);
+                    visibleBookings = data.bookings.filter(
+                        b => b.event_facility === user.affiliation && b.deleted === false
+                        // facility should be Gym as the user affiliation is Gym
+                    );
+                }
                 setBookings(visibleBookings);
 
                 // Fetch equipment for each visible booking

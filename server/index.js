@@ -99,7 +99,7 @@ app.use('/api/create-equipment', createequipmentRoute);
 // UPDATE
 app.use('/api/update-booking-status', updateBookingStatusRoute);
 // CANCEL
-app.use('./api/cancel-booking', cancelBookingRoute);
+app.use('/api/cancel-booking', cancelBookingRoute);
 // DELETE
 app.use('/api/delete-booking', deleteBookingRoute);
 // FETCH

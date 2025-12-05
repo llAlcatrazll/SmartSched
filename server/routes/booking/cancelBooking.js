@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Pool } = require('pg');
+require('dotenv').config();
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -12,11 +13,11 @@ router.put('/:id', async (req, res) => {
 
     try {
         const result = await pool.query(
-            `UPDATE "Booking"
-             SET status = cancelled
-             WHERE id = $1`,
+            `DELETE FROM "Booking"
+     WHERE id = $1`,
             [bookingId]
         );
+
         console.log('This booking is Cancelled');
 
         if (result.rowCount === 0) {

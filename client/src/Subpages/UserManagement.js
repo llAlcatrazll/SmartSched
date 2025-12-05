@@ -94,6 +94,7 @@ export default function UserManagement() {
                     <select name="role" value={form.role} onChange={handleChange} className="border px-3 py-2 rounded-lg">
                         <option value="user">User</option>
                         <option value="admin">Admin</option>
+                        <option value="owner">Owner</option>
                     </select>
                     <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} className="border px-3 py-2 rounded-lg" required={!editingId} />
                 </div>
