@@ -115,12 +115,28 @@ export default function VehicleBooking() {
     }
 
 
+    // const handleEdit = (index) => {
+    //     setEditingId(index);
+    //     setForm(bookings[index]);
+    //     setShowForm(true);
+    //     window.scrollTo({ top: 0, behavior: 'smooth' });
+    // };
     const handleEdit = (index) => {
-        setEditingId(index);
-        setForm(bookings[index]);
+        const b = bookings[index];
+
+        setEditingId(b.id); // use id, not index
+        setForm({
+            vehicleType: b.vehicleType || b.vehicle_Type || '',
+            requestor: b.requestor || '',
+            department: b.department || '',
+            date: b.date ? b.date.split('T')[0] : '',
+            purpose: b.purpose || ''
+        });
+
         setShowForm(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
+
     const [filter, setFilter] = useState({
         search: '',
         vehicleType: 'All',
