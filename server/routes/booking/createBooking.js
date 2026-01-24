@@ -16,16 +16,18 @@ router.post('/', async (req, res) => {
         requested_by,
         organization,
         contact,
-        creator_id
+        creator_id,
+        reservation,
+        insider,
     } = req.body;
 
     try {
         const result = await pool.query(
             `INSERT INTO "Booking" 
-            (event_date, starting_time, ending_time, event_name, event_facility, requested_by, organization, contact, creator_id, status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,'pending')
+            (event_date, starting_time, ending_time, event_name, event_facility, requested_by, organization, contact, creator_id, status, reservation, insider)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,'pending', $10, $11)
             RETURNING id`,
-            [event_date, starting_time, ending_time, event_name, event_facility, requested_by, organization, contact, creator_id]
+            [event_date, starting_time, ending_time, event_name, event_facility, requested_by, organization, contact, creator_id, reservation, insider]
         );
 
         const bookingId = result.rows[0].id;

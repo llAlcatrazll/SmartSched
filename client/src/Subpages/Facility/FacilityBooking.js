@@ -31,11 +31,64 @@ export default function Booking() {
     const [deletedEquipmentIds, setDeletedEquipmentIds] = useState([]);
     const [orgSuggestions, setOrgSuggestions] = useState([]);
     const [showOrgSuggestions, setShowOrgSuggestions] = useState(false);
-    const [facilitySuggestions, setFacilitySuggestions] = useState([]);
-    const [showFacilitySuggestions, setShowFacilitySuggestions] = useState(false);
+    // const [facilitySuggestions, setFacilitySuggestions] = useState([]);
+    // const [showFacilitySuggestions, setShowFacilitySuggestions] = useState(false);
     const location = useLocation();
     const [conflictBooking, setConflictBooking] = useState(null);
     const [UserisNotAdmin, setUserisNotAdmin] = useState(false);
+    // const [facilities, setFacilities] = useState([]);
+    // const [facilitySuggestions, setFacilitySuggestions] = useState([]);
+    // const [showFacilitySuggestions, setShowFacilitySuggestions] = useState(false);
+    const [facilitiesList, setFacilitiesList] = useState([]);
+    const [loadingFacilities, setLoadingFacilities] = useState(false);
+    const [facilitiesError, setFacilitiesError] = useState('');
+    const [affiliations, setAffiliations] = useState([]);
+    const [loadingAffiliations, setLoadingAffiliations] = useState(true);
+    const [affiliationsError, setAffiliationsError] = useState('');
+
+    useEffect(() => {
+        const fetchFacilities = async () => {
+            setLoadingFacilities(true);
+            try {
+                const res = await fetch('http://localhost:5000/api/fetch-facilities');
+                const data = await res.json();
+
+                if (data.success && Array.isArray(data.facilities)) {
+                    setFacilitiesList(data.facilities);
+                } else {
+                    setFacilitiesError('Failed to load facilities');
+                }
+            } catch (err) {
+                console.error(err);
+                setFacilitiesError('Error fetching facilities');
+            } finally {
+                setLoadingFacilities(false);
+            }
+        };
+
+        fetchFacilities();
+    }, []);
+    useEffect(() => {
+        const fetchAffiliations = async () => {
+            try {
+                const res = await fetch('http://localhost:5000/api/fetch-affiliation');
+                const data = await res.json();
+
+                if (data.success && data.affiliations) {
+                    setAffiliations(data.affiliations); // expected [{ abbr, meaning }]
+                } else {
+                    setAffiliationsError('No affiliations found');
+                }
+            } catch (err) {
+                console.error(err);
+                setAffiliationsError('Failed to fetch affiliations');
+            } finally {
+                setLoadingAffiliations(false);
+            }
+        };
+
+        fetchAffiliations();
+    }, []);
 
     useEffect(() => {
         const storedRole = localStorage.getItem('currentUserRole');
@@ -114,21 +167,6 @@ export default function Booking() {
         dateTo: ''
     });
 
-    // Fetch bookings from backend
-    // useEffect(() => {
-    //     fetch('http://localhost:5000/api/fetch-bookings')
-    //         .then(res => res.json())
-    //         .then(data => {
-    //             if (data.success) {
-    //                 setBookings(data.bookings);
-    //             } else {
-    //                 console.log('Fetch bookings failed:', data.message || data.error);
-    //             }
-    //         })
-    //         .catch(err => {
-    //             console.log('Fetch bookings error:', err);
-    //         });
-    // }, []);
     useEffect(() => {
         const storedUserId = localStorage.getItem('currentUserId');
         const storedUserRole = localStorage.getItem('currentUserRole');
@@ -363,7 +401,9 @@ export default function Booking() {
                     requested_by: form.requestedBy,
                     organization: form.org,
                     contact: form.contact,
-                    creator_id: currentUserId
+                    creator_id: currentUserId,
+                    reservation: form.bookingType === 'reservation',
+                    insider: form.userType
                 })
             });
 
@@ -654,57 +694,30 @@ export default function Booking() {
                                         required
                                     />
                                 </div>
-                                <div className="relative">
-                                    <label className="block text-sm font-medium mb-1">Event facility*</label>
-                                    <input
-                                        type="text"
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Facility*</label>
+                                    <select
                                         name="facility"
                                         value={form.facility}
-                                        onChange={e => {
-                                            const value = e.target.value;
-                                            setForm(prev => ({ ...prev, facility: value }));
-
-                                            if (value.length > 0) {
-                                                const suggestions = facilityList.filter(f =>
-                                                    f.facility.toLowerCase().includes(value.toLowerCase())
-                                                );
-                                                setFacilitySuggestions(suggestions);
-                                                setShowFacilitySuggestions(true);
-                                            } else {
-                                                setShowFacilitySuggestions(false);
-                                            }
-                                        }}
-                                        onBlur={() => setTimeout(() => setShowFacilitySuggestions(false), 100)}
-                                        onFocus={() => {
-                                            if (form.facility.length > 0) setShowFacilitySuggestions(true);
-                                        }}
-                                        placeholder="Gymnasium"
+                                        onChange={(e) =>
+                                            setForm(prev => ({ ...prev, facility: e.target.value }))
+                                        }
                                         className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]"
                                         required
-                                        autoComplete="off"
-                                    />
-
-                                    {showFacilitySuggestions && facilitySuggestions.length > 0 && (
-                                        <ul className="absolute bg-white border mt-1 rounded-lg w-full max-h-48 overflow-y-auto z-10">
-                                            {facilitySuggestions.map((f, i) => (
-                                                <li
-                                                    key={i}
-                                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                                    onMouseDown={() => {
-                                                        setForm(prev => ({ ...prev, facility: f.facility }));
-                                                        setShowFacilitySuggestions(false);
-                                                    }}
-                                                >
-                                                    {f.facility}
-                                                    <span className="text-gray-500 text-sm ml-2">
-                                                        ({f.capacity}+{f.equipment})
-                                                    </span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
+                                    >
+                                        <option value="">Select a facility</option>
+                                        {loadingFacilities && <option disabled>Loading...</option>}
+                                        {facilitiesError && <option disabled>{facilitiesError}</option>}
+                                        {facilitiesList.map((f) => (
+                                            <option key={f.id} value={f.name}>
+                                                {f.name} {/* render only the name, not the object */}
+                                            </option>
+                                        ))}
+                                    </select>
 
                                 </div>
+
+
                             </div>
                         </div>
                         {/* Booker */}
@@ -725,53 +738,22 @@ export default function Booking() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">Org / Dept*</label>
-                                    <input
-                                        type="text"
+                                    <select
                                         name="org"
                                         value={form.org}
-                                        onChange={e => {
-                                            const value = e.target.value;
-                                            setForm(prev => ({ ...prev, org: value }));
-                                            if (value.length > 0) {
-                                                const suggestions = orgAbbreviations.filter(
-                                                    o =>
-                                                        o.abbr.toLowerCase().includes(value.toLowerCase()) ||
-                                                        o.meaning.toLowerCase().includes(value.toLowerCase())
-                                                );
-                                                setOrgSuggestions(suggestions);
-                                                setShowOrgSuggestions(true);
-                                            } else {
-                                                setShowOrgSuggestions(false);
-                                            }
-                                        }}
-                                        onBlur={() => setTimeout(() => setShowOrgSuggestions(false), 100)}
-                                        onFocus={() => {
-                                            if (form.org.length > 0) setShowOrgSuggestions(true);
-                                        }}
-                                        placeholder="AGSO"
+                                        onChange={(e) => setForm(prev => ({ ...prev, org: e.target.value }))}
                                         className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]"
                                         required
-                                        autoComplete="off"
-                                    />
-                                    {showOrgSuggestions && orgSuggestions.length > 0 && (
-                                        <ul className="absolute z-10 bg-white border border-gray-200 rounded shadow-md mt-1 max-h-48 overflow-y-auto w-full">
-                                            {orgSuggestions.map((o, idx) => (
-                                                <li
-                                                    key={idx}
-                                                    className="px-4 py-2 hover:bg-[#fde8e8] cursor-pointer"
-                                                    onMouseDown={() => {
-                                                        setForm(prev => ({ ...prev, org: o.abbr }));
-                                                        setShowOrgSuggestions(false);
-                                                    }}
-                                                >
-                                                    <span className="font-bold">{o.abbr}</span>
-                                                    {o.abbr && <span className="text-gray-500 ml-2">{o.meaning}</span>}
-                                                    {!o.abbr && <span className="text-gray-500">{o.meaning}</span>}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
+                                    >
+                                        <option value="">Select Org / Dept</option>
+                                        {affiliations.map((o) => (
+                                            <option key={o.id} value={o.abbreviation}>
+                                                {o.abbreviation} - {o.meaning}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
+
                                 <div>
                                     <label className="block text-sm font-medium mb-1">Contact*</label>
                                     <input
@@ -864,21 +846,38 @@ export default function Booking() {
 
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-2">Is Booking*</label>
-                                    <label className="flex items-center gap-3 cursor-pointer select-none">
-                                        <input
-                                            type="checkbox"
-                                            checked={form.isBooking}
-                                            onChange={(e) =>
-                                                setForm(prev => ({ ...prev, isBooking: e.target.checked }))
-                                            }
-                                            className="h-5 w-5 accent-[#96161C] cursor-pointer"
-                                        />
-                                        <span className="text-sm text-gray-700">
-                                            Confirm this is an official booking
-                                        </span>
-                                    </label>
+                                    <label className="block text-sm font-medium mb-2">Type*</label>
+                                    <div className="flex items-center gap-6">
+                                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                                            <input
+                                                type="radio"
+                                                name="bookingType"
+                                                value="booking"
+                                                checked={form.bookingType === 'booking'}
+                                                onChange={(e) =>
+                                                    setForm(prev => ({ ...prev, bookingType: e.target.value }))
+                                                }
+                                                className="h-5 w-5 accent-[#96161C] cursor-pointer"
+                                            />
+                                            <span className="text-sm text-gray-700">Booking</span>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                                            <input
+                                                type="radio"
+                                                name="bookingType"
+                                                value="reservation"
+                                                checked={form.bookingType === 'reservation'}
+                                                onChange={(e) =>
+                                                    setForm(prev => ({ ...prev, bookingType: e.target.value }))
+                                                }
+                                                className="h-5 w-5 accent-[#96161C] cursor-pointer"
+                                            />
+                                            <span className="text-sm text-gray-700">Reservation</span>
+                                        </label>
+                                    </div>
                                 </div>
+
 
                                 <div>
                                     <label className="block text-sm font-medium mb-2">
@@ -1032,20 +1031,26 @@ export default function Booking() {
                                     ))}
                                 </select>
                             </div>
-                            <div className="flex-1 min-w-[140px] max-w-xs">
-                                <label className="block text-xs font-semibold mb-1 text-[#96161C]">Org/Dept</label>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Org/Dept*</label>
                                 <select
                                     name="org"
-                                    value={filter.org}
-                                    onChange={handleFilterChange}
-                                    className="border rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#96161C]"
+                                    value={form.org}
+                                    onChange={(e) => setForm(prev => ({ ...prev, org: e.target.value }))}
+                                    className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]"
+                                    required
                                 >
-                                    <option value="All">All</option>
-                                    {orgs.map(o => (
-                                        <option key={o} value={o}>{o}</option>
+                                    <option value="">Select an Org/Dept</option>
+                                    {affiliations.map((o) => (
+                                        <option key={o.id} value={o.abbreviation}>
+                                            {o.abbreviation} {/* only the abbreviation is rendered */}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
+
+
+
                             <div className="flex-1 min-w-[120px] max-w-xs">
                                 <label className="block text-xs font-semibold mb-1 text-[#96161C]">Date From</label>
                                 <input
