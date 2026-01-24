@@ -45,6 +45,9 @@ export default function Booking() {
     const [affiliations, setAffiliations] = useState([]);
     const [loadingAffiliations, setLoadingAffiliations] = useState(true);
     const [affiliationsError, setAffiliationsError] = useState('');
+    const [schedules, setSchedules] = useState([
+        { date: '', startTime: '', endTime: '' }
+    ]);
 
     useEffect(() => {
         const fetchFacilities = async () => {
@@ -393,7 +396,8 @@ export default function Booking() {
                 method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    event_date: form.date,
+                    // event_date: form.date,
+                    schedules,
                     starting_time: form.startTime,
                     ending_time: form.endTime,
                     event_name: form.title,
@@ -633,51 +637,84 @@ export default function Booking() {
                         {/* Date & Time */}
                         <div className="mb-6">
                             <h3 className="font-semibold text-lg mb-3 text-[#96161C]">Date & Time</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Event date*</label>
-                                    <input
-                                        type="date"
-                                        name="date"
-                                        value={form.date}
-                                        onChange={handleChange}
-                                        className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]"
-                                        required
-                                        min={!editingId ? getTomorrowDate() : undefined}
-                                    />
 
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Starting time*</label>
-                                    <input
-                                        type="time"
-                                        name="startTime"
-                                        value={form.startTime}
-                                        onChange={handleChange}
-                                        className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]"
-                                        required
-                                        min="06:00"
-                                        max="22:00"
-                                    />
-                                </div>
+                            {schedules.map((s, index) => (
+                                <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 items-end">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Event date*</label>
+                                        <input
+                                            type="date"
+                                            value={s.date}
+                                            onChange={(e) => {
+                                                const copy = [...schedules];
+                                                copy[index].date = e.target.value;
+                                                setSchedules(copy);
+                                            }}
+                                            className="w-full border rounded-lg px-4 py-2"
+                                            required
+                                        />
+                                    </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Ending time*</label>
-                                    <input
-                                        type="time"
-                                        name="endTime"
-                                        value={form.endTime}
-                                        onChange={handleChange}
-                                        className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]"
-                                        required
-                                        disabled={!form.startTime}
-                                        min={calculateMinEndTime(form.startTime)}
-                                        max="22:00"
-                                    />
-                                </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Start*</label>
+                                        <input
+                                            type="time"
+                                            value={s.startTime}
+                                            onChange={(e) => {
+                                                const copy = [...schedules];
+                                                copy[index].startTime = e.target.value;
+                                                setSchedules(copy);
+                                            }}
+                                            className="w-full border rounded-lg px-4 py-2"
+                                            required
+                                        />
+                                    </div>
 
-                            </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">End*</label>
+                                        <input
+                                            type="time"
+                                            value={s.endTime}
+                                            onChange={(e) => {
+                                                const copy = [...schedules];
+                                                copy[index].endTime = e.target.value;
+                                                setSchedules(copy);
+                                            }}
+                                            className="w-full border rounded-lg px-4 py-2"
+                                            required
+                                        />
+                                    </div>
+
+                                    {/* Remove row (except first) */}
+                                    {index > 0 && (
+                                        <button
+                                            type="button"
+                                            className="text-red-600 text-sm"
+                                            onClick={() =>
+                                                setSchedules(schedules.filter((_, i) => i !== index))
+                                            }
+                                        >
+                                            Remove
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+
+                            {/* Duplicate button */}
+                            <button
+                                type="button"
+                                className="mt-2 text-sm font-semibold text-[#96161C]"
+                                onClick={() =>
+                                    setSchedules([
+                                        ...schedules,
+                                        { date: '', startTime: '', endTime: '' }
+                                    ])
+                                }
+                            >
+                                + Add another date
+                            </button>
                         </div>
+
                         {/* Event and Venue */}
                         <div className="mb-6">
                             <h3 className="font-semibold text-lg mb-3 text-[#96161C]">Event and Venue</h3>
