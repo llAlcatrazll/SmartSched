@@ -863,6 +863,74 @@ export default function Booking() {
 
 
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Is Booking*</label>
+                                    <label className="flex items-center gap-3 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={form.isBooking}
+                                            onChange={(e) =>
+                                                setForm(prev => ({ ...prev, isBooking: e.target.checked }))
+                                            }
+                                            className="h-5 w-5 accent-[#96161C] cursor-pointer"
+                                        />
+                                        <span className="text-sm text-gray-700">
+                                            Confirm this is an official booking
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">
+                                        <p className='font-medium'>Booker Type*</p>
+                                    </label>
+
+                                    <div className="flex flex-wrap gap-6">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="userType"
+                                                value="student"
+                                                checked={form.userType === 'student'}
+                                                onChange={(e) =>
+                                                    setForm(prev => ({ ...prev, userType: e.target.value }))
+                                                }
+                                                className="h-5 w-5 accent-[#96161C]"
+                                                required
+                                            />
+                                            <span className="text-sm text-gray-700">Student</span>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="userType"
+                                                value="employee"
+                                                checked={form.userType === 'employee'}
+                                                onChange={(e) =>
+                                                    setForm(prev => ({ ...prev, userType: e.target.value }))
+                                                }
+                                                className="h-5 w-5 accent-[#96161C]"
+                                            />
+                                            <span className="text-sm text-gray-700">Employee</span>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="userType"
+                                                value="outsider"
+                                                checked={form.userType === 'outsider'}
+                                                onChange={(e) =>
+                                                    setForm(prev => ({ ...prev, userType: e.target.value }))
+                                                }
+                                                className="h-5 w-5 accent-[#96161C]"
+                                            />
+                                            <span className="text-sm text-gray-700">Outsider</span>
+                                        </label>
+                                    </div>
+                                </div>
+
 
                             </div>
                         </div>
