@@ -1181,6 +1181,8 @@ export default function Booking() {
                                 <th className="px-2 py-3 text-sm font-bold text-white uppercase tracking-wider text-center">Time</th>
                                 <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">Org/Dept</th>
                                 <th className="px-6 py-2 text-left text-sm font-bold text-white uppercase tracking-wider">Equipment</th>
+                                <th className="px-6 py-2 text-left text-sm font-bold text-white uppercase tracking-wider">Type</th>
+                                <th className="px-6 py-2 text-left text-sm font-bold text-white uppercase tracking-wider">Booker</th>
                                 {showRequesterInfo && (
                                     <>
                                         <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">Requested By</th>
@@ -1282,7 +1284,32 @@ export default function Booking() {
                                                 <span className="text-gray-400 italic">No equipment</span>
                                             )}
                                         </td>
+                                        <td>
+                                            <span
+                                                className={`px-3 py-1 rounded-full text-xs font-semibold
+      ${b.reservation
+                                                        ? 'bg-blue-100 text-blue-800'
+                                                        : 'bg-green-100 text-green-800'
+                                                    }`}
+                                            >
+                                                {b.reservation ? 'Reservation' : 'Booking'}
+                                            </span>
+                                        </td>
 
+                                        {/* Insider / Employee / Student / Outsider Badge */}
+                                        <td>
+                                            <span
+                                                className={`px-3 py-1 rounded-full text-xs font-semibold
+      ${b.insider === 'employee'
+                                                        ? 'bg-purple-100 text-purple-800'
+                                                        : b.insider === 'student'
+                                                            ? 'bg-yellow-100 text-yellow-800'
+                                                            : 'bg-gray-100 text-gray-800'
+                                                    }`}
+                                            >
+                                                {b.insider === 'employee' ? 'Employee' : b.insider === 'student' ? 'Student' : 'Outsider'}
+                                            </span>
+                                        </td>
                                         {showRequesterInfo && (
                                             <>
                                                 {UserisNotAdmin ?
