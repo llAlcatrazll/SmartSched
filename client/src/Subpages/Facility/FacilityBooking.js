@@ -48,6 +48,25 @@ export default function Booking() {
     const [schedules, setSchedules] = useState([
         { date: '' || null, startTime: '' || null, endTime: '' || null }
     ]);
+    const [equipmentList, setEquipmentList] = useState([]);
+    const [equipmentLoading, setEquipmentLoading] = useState(false);
+    const [equipmentError, setEquipmentError] = useState('');
+    useEffect(() => {
+        setEquipmentLoading(true);
+
+        fetch('http://localhost:5000/api/fetch-equipments')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setEquipmentList(data.equipments || []);
+                } else {
+                    setEquipmentError('Failed to load equipment');
+                }
+            })
+            .catch(() => setEquipmentError('Failed to load equipment'))
+            .finally(() => setEquipmentLoading(false));
+    }, []);
+
 
     useEffect(() => {
         const fetchFacilities = async () => {
@@ -821,11 +840,20 @@ export default function Booking() {
                                                     required
                                                 >
                                                     <option value="">Select Equipment</option>
-                                                    <option value="Speaker">Speaker</option>
-                                                    <option value="DLP">DLP</option>
-                                                    <option value="Microphone">Microphone</option>
-                                                    <option value="Extension Wire">Extension Wire</option>
-                                                    <option value="HDMI Cable">HDMI Cable</option>
+
+                                                    {equipmentLoading && (
+                                                        <option disabled>Loading...</option>
+                                                    )}
+
+                                                    {equipmentError && (
+                                                        <option disabled>{equipmentError}</option>
+                                                    )}
+
+                                                    {equipmentList.map(eq => (
+                                                        <option key={eq.id} value={eq.name}>
+                                                            {eq.name}
+                                                        </option>
+                                                    ))}
                                                 </select>
                                             </div>
 
@@ -834,7 +862,7 @@ export default function Booking() {
                                                 <input
                                                     type="number"
                                                     min="1"
-                                                    max="5"// MAX VALUE
+                                                    max="5"
                                                     value={row.quantity}
                                                     onChange={(e) => {
                                                         const updated = [...equipmentRows];
@@ -849,9 +877,8 @@ export default function Booking() {
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    // When removing equipment row:
                                                     if (equipmentRows[index].id) {
-                                                        setDeletedEquipmentIds([...deletedEquipmentIds, equipmentRows[index].id]);
+                                                        setDeletedEquipmentIds(prev => [...prev, equipmentRows[index].id]);
                                                     }
                                                     setEquipmentRows(equipmentRows.filter((_, i) => i !== index));
                                                 }}
@@ -862,6 +889,7 @@ export default function Booking() {
                                             </button>
                                         </div>
                                     ))}
+
 
 
                                 </div>
