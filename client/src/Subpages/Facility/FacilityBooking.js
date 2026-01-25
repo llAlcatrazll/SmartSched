@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { orgAbbreviations } from '../../constants/OrgAbbreviations';
 import { orgAbbreviations as facilityList } from '../../constants/FacilitiesListing';
 import { useLocation } from 'react-router-dom';
-
+import BookingSummary from "../BookingSummary";
 function formatTime(timeStr) {
     if (!timeStr) return '';
     // Handles "HH:mm" or "HH:mm:ss"
@@ -16,6 +17,7 @@ function formatTime(timeStr) {
 }
 
 export default function Booking() {
+    const navigate = useNavigate();
     const [showForm, setShowForm] = useState(true);
     const [bookings, setBookings] = useState([]);
     const [filtered, setFiltered] = useState([]);
@@ -29,8 +31,11 @@ export default function Booking() {
     const [showRequesterInfo, setShowRequesterInfo] = useState(false);
     const [equipmentMap, setEquipmentMap] = useState({});
     const [deletedEquipmentIds, setDeletedEquipmentIds] = useState([]);
-    const [orgSuggestions, setOrgSuggestions] = useState([]);
-    const [showOrgSuggestions, setShowOrgSuggestions] = useState(false);
+    const [selectedBooking, setSelectedBooking] = useState(null);
+    const [showBookingSummary, setShowBookingSummary] = useState(false);
+
+    // const [orgSuggestions, setOrgSuggestions] = useState([]);
+    // const [showOrgSuggestions, setShowOrgSuggestions] = useState(false);
     // const [facilitySuggestions, setFacilitySuggestions] = useState([]);
     // const [showFacilitySuggestions, setShowFacilitySuggestions] = useState(false);
     const location = useLocation();
@@ -51,6 +56,32 @@ export default function Booking() {
     const [equipmentList, setEquipmentList] = useState([]);
     const [equipmentLoading, setEquipmentLoading] = useState(false);
     const [equipmentError, setEquipmentError] = useState('');
+
+    const [editReservationId, setEditReservationId] = useState(null);
+    const [showVehicleForm, setShowVehicleForm] = useState(false);
+
+    const [vehicleType, setVehicleType] = useState('');
+    const [showVehicle, setShowVehicle] = useState(false);
+    const handleReservationChange = async (bookingId, value) => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/toggle-reservation/${bookingId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reservation: value === 'Reservation' }),
+            });
+            const data = await res.json();
+            console.log('Updated booking:', data.booking); // debug
+            if (data.success) {
+                setBookings(prev =>
+                    prev.map(b => (b.id === bookingId ? data.booking : b))
+                );
+                setEditReservationId(null);
+            }
+        } catch (err) {
+            console.error('Failed to update reservation:', err);
+        }
+    };
+
     useEffect(() => {
         setEquipmentLoading(true);
 
@@ -67,6 +98,62 @@ export default function Booking() {
             .finally(() => setEquipmentLoading(false));
     }, []);
 
+    // const handleAddVehicle = async () => {
+    //     if (!vehicleForm.vehicleType) {
+    //         alert('Please select a vehicle type');
+    //         return;
+    //     }
+
+    //     const currentUserId = localStorage.getItem('currentUserId');
+
+    //     const payload = {
+    //         vehicle_Type: vehicleForm.vehicleType,
+    //         requestor: form.requestor,
+    //         department: form.department,
+    //         date: form.event_date || form.date, // reuse booking date
+    //         purpose: form.purpose,
+    //         booker_id: Number(currentUserId),
+    //     };
+
+    //     try {
+    //         // 1️⃣ check conflicts
+    //         const conflictRes = await fetch(
+    //             `http://localhost:5000/api/vehicle-conflicts?vehicleType=${encodeURIComponent(payload.vehicle_Type)}&date=${encodeURIComponent(payload.date)}`
+    //         );
+    //         const conflictData = await conflictRes.json();
+
+    //         if (conflictData.success && conflictData.bookings.length > 0) {
+    //             alert('Vehicle already booked on this date.');
+    //             return;
+    //         }
+
+    //         // 2️⃣ create vehicle booking
+    //         const res = await fetch(
+    //             'http://localhost:5000/api/create-vehicle-booking',
+    //             {
+    //                 method: 'POST',
+    //                 headers: { 'Content-Type': 'application/json' },
+    //                 body: JSON.stringify(payload),
+    //             }
+    //         );
+
+    //         const data = await res.json();
+
+    //         if (!data.success) {
+    //             throw new Error(data.message);
+    //         }
+
+    //         alert('Vehicle booked successfully');
+
+    //         // reset vehicle-only state
+    //         setVehicleForm({ vehicleType: '' });
+    //         setShowVehicleForm(false);
+
+    //     } catch (err) {
+    //         console.error(err);
+    //         alert('Failed to book vehicle');
+    //     }
+    // };
 
     useEffect(() => {
         const fetchFacilities = async () => {
@@ -332,6 +419,25 @@ export default function Booking() {
     const currentUserId = localStorage.getItem('currentUserId');
     const currentUserRole = localStorage.getItem('currentUserRole');
     // const isConflict = false;
+    const handleToggleReservation = async (bookingId) => {
+        try {
+            const res = await fetch(`/api/toggle-reservation/${bookingId}`, {
+                method: 'POST',
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                // Update local state to reflect change immediately
+                setBookings(prev =>
+                    prev.map(b => (b.id === bookingId ? data.booking : b))
+                );
+            } else {
+                console.error('Failed to toggle reservation:', data.message);
+            }
+        } catch (err) {
+            console.error('Toggle reservation error:', err);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -609,6 +715,77 @@ export default function Booking() {
             contact: ''
         });
     }
+    const handleCreateVehicleFromBooking = async () => {
+        if (!vehicleType) {
+            alert('Please select a vehicle');
+            return;
+        }
+
+        // Ensure facility booking fields exist
+        const required = ['event_name', 'event_date', 'requested_by', 'organization'];
+        const missing = required.filter(f => !form[f]);
+
+        const requiredMap = {
+            title: 'Event Name',
+            requestedBy: 'Requested By',
+            org: 'Department / Organization',
+        };
+
+        // check form fields
+        const missingFields = Object.entries(requiredMap)
+            .filter(([key]) => !form[key] || form[key].trim() === '')
+            .map(([_, label]) => label);
+
+        // check date from schedules
+        if (!schedules[0]?.date) {
+            missingFields.push('Event Date');
+        }
+
+        if (missingFields.length > 0) {
+            alert(
+                `Please complete the following facility booking details first:\n\n` +
+                missingFields.map(f => `• ${f}`).join('\n')
+            );
+            return;
+        }
+
+
+
+        const payload = {
+            vehicle_Type: vehicleType,
+            requestor: form.requestedBy,
+            department: form.org,
+            date: schedules[0].date,
+            purpose: form.title,
+            booker_id: Number(localStorage.getItem('currentUserId')),
+        };
+
+        try {
+            const res = await fetch(
+                'http://localhost:5000/api/create-raw-vehicle-booking',
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            const data = await res.json();
+
+            if (!data.success) {
+                throw new Error(data.message);
+            }
+
+            alert('Vehicle booking created successfully');
+
+            setVehicleType('');
+            setShowVehicle(false);
+
+        } catch (err) {
+            console.error(err);
+            alert('Failed to create vehicle booking');
+        }
+    };
 
     return (
         <div className="w-full">
@@ -889,6 +1066,47 @@ export default function Booking() {
                                             </button>
                                         </div>
                                     ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowVehicle(true)}
+                                        className="bg-[#96161C] text-white px-6 py-2 rounded-lg"
+                                    >
+                                        Add Vehicle
+                                    </button>
+                                    {showVehicle && (
+                                        <div className="mt-4 p-4 border rounded-lg bg-gray-50">
+                                            <label className="block text-sm font-medium mb-1">
+                                                Vehicle Type*
+                                            </label>
+
+                                            <select
+                                                value={vehicleType}
+                                                onChange={(e) => setVehicleType(e.target.value)}
+                                                className="w-full border rounded-lg px-4 py-2 mb-3"
+                                                required
+                                            >
+                                                <option value="">Select...</option>
+                                                <option value="isuzu">Isuzu</option>
+                                                <option value="hi-ace">Hi-Ace</option>
+                                                <option value="kia">Kia</option>
+                                                <option value="small-bus">Small Bus</option>
+                                                <option value="big-bus">Big Bus</option>
+                                                <option value="tamaraw">Tamaraw</option>
+                                                <option value="hilux">Hilux</option>
+                                                <option value="innova-manual">Innova Manual</option>
+                                                <option value="innova-automatic">Innova Automatic</option>
+                                            </select>
+
+                                            <button
+                                                type="button"
+                                                onClick={handleCreateVehicleFromBooking}
+                                                className="bg-[#96161C] text-white px-6 py-2 rounded-lg"
+                                            >
+                                                Save Vehicle Booking
+                                            </button>
+                                        </div>
+                                    )}
+
 
 
 
@@ -1206,7 +1424,13 @@ export default function Booking() {
 
                                     <tr
                                         key={b.id || idx}
-                                        className={`transition hover:bg-[#f8eaea] ${idx % 2 === 0 ? 'bg-white' : 'bg-[#fde8e8]'}`}>
+                                        className={`transition hover:bg-[#f8eaea] cursor-pointer ${idx % 2 === 0 ? 'bg-white' : 'bg-[#fde8e8]'}`}
+                                        onClick={() => {
+                                            setSelectedBooking(b);      // set the booking
+                                            setShowBookingSummary(true); // show modal
+                                        }}
+                                    >
+
                                         {/*  */}
 
                                         {/* CHECK USER ROLE */}
@@ -1284,17 +1508,35 @@ export default function Booking() {
                                                 <span className="text-gray-400 italic">No equipment</span>
                                             )}
                                         </td>
-                                        <td>
-                                            <span
-                                                className={`px-3 py-1 rounded-full text-xs font-semibold
-      ${b.reservation
-                                                        ? 'bg-blue-100 text-blue-800'
-                                                        : 'bg-green-100 text-green-800'
-                                                    }`}
-                                            >
-                                                {b.reservation ? 'Reservation' : 'Booking'}
-                                            </span>
+                                        <td className="px-6 py-4 whitespace-nowrap cursor-pointer">
+                                            {editReservationId === b.id ? (
+                                                <select
+                                                    value={b.reservation ? 'Reservation' : 'Booking'}
+                                                    onChange={(e) => handleReservationChange(b.id, e.target.value)}
+                                                    onBlur={() => setEditReservationId(null)}
+                                                    autoFocus
+                                                    className="text-xs px-3 py-1 border rounded-full focus:ring-2 focus:ring-[#96161C] font-bold shadow"
+                                                    style={{ minWidth: 120 }}
+                                                >
+                                                    <option value="Booking">Booking</option>
+                                                    <option value="Reservation">Reservation</option>
+                                                </select>
+                                            ) : (
+                                                <span
+                                                    className={`px-3 py-1 rounded-full text-xs font-bold shadow
+        ${b.reservation
+                                                            ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                                            : 'bg-green-100 text-green-800 border border-green-300'
+                                                        }`}
+                                                    onClick={() => setEditReservationId(b.id)}
+                                                >
+                                                    {b.reservation ? 'Reservation' : 'Booking'}
+                                                </span>
+                                            )}
                                         </td>
+
+
+
 
                                         {/* Insider / Employee / Student / Outsider Badge */}
                                         <td>
@@ -1451,13 +1693,43 @@ export default function Booking() {
                                                 </button>
                                             }
                                         </td>
-
-
                                     </tr>
                                 ))
                             )}
                         </tbody>
                     </table>
+                    {showBookingSummary && selectedBooking && (
+                        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+                            <div className="bg-white rounded-xl shadow-lg p-6 w-11/12 max-w-xl relative">
+                                <button
+                                    className="absolute top-3 right-3 text-gray-500 hover:text-gray-900"
+                                    onClick={() => setShowBookingSummary(false)}
+                                >
+                                    ✕
+                                </button>
+
+                                <h2 className="text-xl font-bold mb-4">{selectedBooking.event_name || selectedBooking.title}</h2>
+                                <p><strong>Facility:</strong> {selectedBooking.event_facility || selectedBooking.facility}</p>
+                                <p><strong>Date:</strong> {selectedBooking.event_date || selectedBooking.date}</p>
+                                <p><strong>Time:</strong> {selectedBooking.starting_time} - {selectedBooking.ending_time}</p>
+                                <p><strong>Requested By:</strong> {selectedBooking.requested_by}</p>
+                                <p><strong>Organization:</strong> {selectedBooking.organization || selectedBooking.org}</p>
+                                <p><strong>Contact:</strong> {selectedBooking.contact}</p>
+
+                                {equipmentMap[selectedBooking.id]?.length > 0 && (
+                                    <div className="mt-4">
+                                        <strong>Equipment:</strong>
+                                        <ul className="list-disc list-inside">
+                                            {equipmentMap[selectedBooking.id].map((eq, idx) => (
+                                                <li key={idx}>{eq.quantity}x {eq.type}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                 </div>
 
                 {/* Pagination Controls & Rows Per Page - Centered at bottom */}
