@@ -126,6 +126,10 @@ app.use('/api/dashboard/recent-facility-transactions', require('./routes/dashboa
 app.use('/api/dashboard/recent-vehicle-transactions', require('./routes/dashboard/recentVehicleTransactions'));
 app.use('/api/vehicle/delete', deleteVehicleBooking);
 
+const editVehicleBooking = require('./routes/booking/editVehicleBooking');
+app.use('/api/edit-vehicle-booking', editVehicleBooking);
+const updateVehiclePayment = require('./routes/booking/updateVehiclePayment');
+app.use('/api/edit-payment', updateVehiclePayment);
 
 app.use('/api/vehicle-conflicts', require('./routes/booking/vehicleConflicts'));
 

@@ -475,6 +475,8 @@ export default function Booking() {
     const currentUserId = localStorage.getItem('currentUserId');
     const currentUserRole = localStorage.getItem('currentUserRole');
     // const isConflict = false;
+    let isConflict = false;
+    let conflictingBooking = null;
     const handleToggleReservation = async (bookingId) => {
         try {
             const res = await fetch(`/api/toggle-reservation/${bookingId}`, {
@@ -510,24 +512,30 @@ export default function Booking() {
                 );
                 const data = await res.json();
 
-                if (data.success) {
-                    const newDate = form.date; // ✅ DO NOT SHIFT DATE
-                    const newStart = form.startTime;
-                    const newEnd = form.endTime;
-
+                if (data.success && Array.isArray(data.bookings)) {
                     const isTimeOverlap = (aStart, aEnd, bStart, bEnd) =>
                         aStart < bEnd && aEnd > bStart;
 
-                    for (const b of data.bookings) {
-                        const bDate = (b.event_date || b.date || '').split('T')[0];
-                        const bStart = b.starting_time || '';
-                        const bEnd = b.ending_time || '';
+                    for (const newSchedule of schedules) {
+                        for (const existing of data.bookings) {
+                            const existingDate = (existing.event_date || '').split('T')[0];
 
-                        if (bDate === newDate && isTimeOverlap(newStart, newEnd, bStart, bEnd)) {
-                            setConflictBooking(b);
-                            isConflict = true;
-                            break;
+                            if (existingDate === newSchedule.date) {
+                                if (
+                                    isTimeOverlap(
+                                        newSchedule.startTime,
+                                        newSchedule.endTime,
+                                        existing.starting_time,
+                                        existing.ending_time
+                                    )
+                                ) {
+                                    isConflict = true;
+                                    conflictingBooking = existing;
+                                    break;
+                                }
+                            }
                         }
+                        if (isConflict) break;
                     }
                 }
             } catch (err) {
@@ -535,7 +543,12 @@ export default function Booking() {
             }
 
             if (isConflict) {
-                alert('Cannot create booking due to a conflict.');
+                alert(
+                    `Conflict detected!\n\n` +
+                    `Event: ${conflictingBooking.event_name}\n` +
+                    `Date: ${conflictingBooking.event_date.split('T')[0]}\n` +
+                    `Time: ${conflictingBooking.starting_time} - ${conflictingBooking.ending_time}`
+                );
                 return;
             }
         }
@@ -591,30 +604,38 @@ export default function Booking() {
             /* ===============================
                SAFETY CHECK
             =============================== */
-            if (!data.booking?.id) {
-                console.error('Missing booking ID:', data);
+            // if (!data.booking?.id) {
+            //     console.error('Missing booking ID:', data);
+            //     alert('Booking saved, but equipment could not be attached.');
+            //     return;
+            // }
+            if (!Array.isArray(data.bookings) || data.bookings.length === 0) {
+                console.error('Missing booking IDs:', data);
                 alert('Booking saved, but equipment could not be attached.');
                 return;
             }
-
             /* ===============================
                CREATE EQUIPMENT (CREATE ONLY)
             =============================== */
             if (!editingId && cleanEquipment.length > 0) {
-                const eqRes = await fetch('http://localhost:5000/api/create-equipment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        booking_id: data.booking.id,
-                        equipment: cleanEquipment
-                    })
-                });
+                for (const bookingId of data.bookings) {
+                    const eqRes = await fetch('http://localhost:5000/api/create-equipment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            booking_id: bookingId,
+                            equipment: cleanEquipment
+                        })
+                    });
 
-                const eqData = await eqRes.json();
-                if (!eqData.success) {
-                    alert('Booking saved, but equipment failed to save.');
+                    const eqData = await eqRes.json();
+                    if (!eqData.success) {
+                        console.error(`Failed to attach equipment to booking ${bookingId}`);
+                    }
                 }
             }
+
+
 
             /* ===============================
                REFRESH & RESET
@@ -1031,6 +1052,7 @@ export default function Booking() {
             purpose: form.title,
             booker_id: Number(localStorage.getItem('currentUserId')),
         };
+
 
         try {
             const res = await fetch(
@@ -1614,7 +1636,7 @@ export default function Booking() {
                                 >
                                     <option value="">Select an Org/Dept</option>
                                     {affiliations.map((o) => (
-                                        <option key={o.id} value={o.abbreviation}>
+                                        <option key={o.id} value={o.id}>
                                             {o.abbreviation} {/* only the abbreviation is rendered */}
                                         </option>
                                     ))}
