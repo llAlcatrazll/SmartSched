@@ -63,7 +63,31 @@ export default function Booking() {
     const [showBookingSummary, setShowBookingSummary] = useState(false);
     const [loadingAffiliations, setLoadingAffiliations] = useState(true);
     const [showFacilityBreakdown, setShowFacilityBreakdown] = useState(false);
+    // const [showVehicle, setShowVehicle] = useState(false);
+    // const [vehicleType, setVehicleType] = useState('');
+    const [vehicleList, setVehicleList] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
+    useEffect(() => {
+        if (showVehicle) {
+            setLoading(true);
+            fetch('http://localhost:5000/api/fetch-vehicle')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        setVehicleList(data.vehicles); // Assume array of { id, name, type, passenger_capacity }
+                    } else {
+                        setError('Failed to fetch vehicles');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    setError('Error fetching vehicles');
+                })
+                .finally(() => setLoading(false));
+        }
+    }, [showVehicle]);
     const [schedules, setSchedules] = useState([
         { date: '' || null, startTime: '' || null, endTime: '' || null }
     ]);
@@ -1040,7 +1064,8 @@ export default function Booking() {
                                         <label className="block text-sm font-medium mb-1">Event date*</label>
                                         <input
                                             type="date"
-                                            value={s.date} // Bind to schedules array
+                                            value={s.date || getTomorrowDate()}
+                                            min={getTomorrowDate()}
                                             onChange={(e) => {
                                                 const copy = [...schedules];
                                                 copy[index].date = e.target.value;
@@ -1298,7 +1323,7 @@ export default function Booking() {
                                                 type="button"
                                                 onClick={() => {
                                                     setShowVehicle(false);
-                                                    setVehicleType(''); // Clear selection when closing
+                                                    setVehicleType('');
                                                 }}
                                                 className="absolute top-2 right-2 text-gray-600 hover:text-gray-900 font-bold text-lg"
                                                 title="Close"
@@ -1307,7 +1332,7 @@ export default function Booking() {
                                             </button>
 
                                             <label className="block text-sm font-medium mb-1">
-                                                Vehicle Type*
+                                                Vehicle*
                                             </label>
 
                                             <select
@@ -1316,22 +1341,21 @@ export default function Booking() {
                                                 className="w-full border rounded-lg px-4 py-2 mb-3"
                                                 required
                                             >
-                                                <option value="">Select...</option>
-                                                <option value="isuzu">Isuzu</option>
-                                                <option value="hi-ace">Hi-Ace</option>
-                                                <option value="kia">Kia</option>
-                                                <option value="small-bus">Small Bus</option>
-                                                <option value="big-bus">Big Bus</option>
-                                                <option value="tamaraw">Tamaraw</option>
-                                                <option value="hilux">Hilux</option>
-                                                <option value="innova-manual">Innova Manual</option>
-                                                <option value="innova-automatic">Innova Automatic</option>
+                                                <option value="">Select a vehicle...</option>
+                                                {loading && <option disabled>Loading...</option>}
+                                                {error && <option disabled>{error}</option>}
+                                                {vehicleList.map(v => (
+                                                    <option key={v.id} value={v.id}>
+                                                        {`${v.vehicle_name} | ${v.vehicle_type} | Capacity: ${v.passenger_capacity}`}
+                                                    </option>
+                                                ))}
                                             </select>
 
                                             <button
                                                 type="button"
-                                                onClick={handleCreateVehicleFromBooking}
-                                                className="bg-[#96161C] text-white px-6 py-2 rounded-lg"
+                                                onClick={() => handleCreateVehicleFromBooking(vehicleType)}
+                                                disabled={!vehicleType}
+                                                className="bg-[#96161C] text-white px-6 py-2 rounded-lg disabled:opacity-50"
                                             >
                                                 Save Vehicle Booking
                                             </button>
