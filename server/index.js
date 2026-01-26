@@ -101,7 +101,7 @@ app.use('/api/create-booking', createBookingRoute);
 app.use('/api/vehicle-booking', vehicleBookingRoute);
 app.use('/api/create-equipment', createequipmentRoute);
 
-app.use('/api/create-equipments', createEquipmentsRoute);
+
 // UPDATE
 app.use('/api/update-booking-status', updateBookingStatusRoute);
 // CANCEL
@@ -151,7 +151,6 @@ const createEquipmentsRoute = require('./routes/cruds/createEquipments');
 app.use('/api/create-equipments', createEquipmentsRoute);
 const fetchEquipmentsRoute = require('./routes/cruds/fetchEquipments');
 app.use('/api/fetch-equipments', fetchEquipmentsRoute);
-
 // FACILITIES
 const createFacilitiesRoute = require('./routes/cruds/createFacilities');
 app.use('/api/create-facilities', createFacilitiesRoute);
