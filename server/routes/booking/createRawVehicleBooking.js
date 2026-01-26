@@ -54,10 +54,11 @@ router.post('/', async (req, res) => {
                 purpose,
                 booker_id,
                 deleted,
-                payment
+                payment,
+                status
             )
             VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8)
+            ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
             RETURNING *
             `,
             [

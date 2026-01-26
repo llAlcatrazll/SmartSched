@@ -15,7 +15,8 @@ router.post('/', async (req, res) => {
         purpose,
         booker_id = 1,
         deleted = false,
-        payment = 0  // Default to 0 if not provided
+        payment = 0,  // Default to 0 if not provided,
+        status
     } = req.body;
 
     const requiredFields = [
@@ -35,9 +36,9 @@ router.post('/', async (req, res) => {
         const result = await pool.query(
             `
             INSERT INTO "VehicleBooking"
-            (vehicle_id, requestor, department_id, date, purpose, booker_id, deleted, payment)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING *
+            (vehicle_id, requestor, department_id, date, purpose, booker_id, deleted, payment, status)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
+            RETURNING * 
             `,
             [
                 vehicle_id,

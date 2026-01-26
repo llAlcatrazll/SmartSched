@@ -502,6 +502,7 @@ export default function VehicleBooking() {
                                             <th className="px-4 py-2 text-left text-xs font-bold">Requestor</th>
                                             <th className="px-4 py-2 text-left text-xs font-bold">Department</th>
                                             <th className="px-4 py-2 text-left text-xs font-bold">Date</th>
+                                            <th className="px-4 py-2 text-left text-xs font-bold">Status</th>
                                             <th className="px-4 py-2 text-left text-xs font-bold">Purpose</th>
                                         </tr>
                                     </thead>
@@ -514,6 +515,7 @@ export default function VehicleBooking() {
                                                 <td className="px-4 py-2">
                                                     {new Date(c.date).toLocaleDateString('en-US')}
                                                 </td>
+                                                <td className="px-4 py-2">{c.status}</td>
                                                 <td className="px-4 py-2">{c.purpose}</td>
                                             </tr>
                                         ))}
