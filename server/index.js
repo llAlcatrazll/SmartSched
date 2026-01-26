@@ -139,23 +139,40 @@ const createAffiliationRoute = require('./routes/cruds/createAffiliations');
 app.use('/api/create-affiliation', createAffiliationRoute);
 const fetchAffiliationRoute = require('./routes/cruds/fetchAffiliations');
 app.use('/api/fetch-affiliation', fetchAffiliationRoute);
+const updateAffiliationRoute = require('./routes/cruds/updateAffiliation');
+app.use('/api/update-affiliation', updateAffiliationRoute);
+const deleteAffiliationRoute = require('./routes/cruds/deleteAffiliation');
+app.use('/api/delete-affiliation', deleteAffiliationRoute);
 
 // VEHICLE
 const createVehicleRoute = require('./routes/cruds/createVehicles');
 app.use('/api/create-vehicle', createVehicleRoute);
 const fetchVehicleRoute = require('./routes/cruds/fetchVehicles');
 app.use('/api/fetch-vehicle', fetchVehicleRoute);
+const updateFinalVehiclesRoute = require('./routes/cruds/updateVehicles');
+app.use('/api/final-update-vehicles', updateFinalVehiclesRoute);
+const deleteFinalVehiclesRoute = require('./routes/cruds/deleteVehicles');
+app.use('/api/final-delete-vehicles', deleteFinalVehiclesRoute);
 
 // EQUIPMENT
 const createEquipmentsRoute = require('./routes/cruds/createEquipments');
 app.use('/api/create-equipments', createEquipmentsRoute);
 const fetchEquipmentsRoute = require('./routes/cruds/fetchEquipments');
 app.use('/api/fetch-equipments', fetchEquipmentsRoute);
+const updateFinalEquipmentsRoute = require('./routes/cruds/updateEquipment');
+app.use('/api/final-update-equipment', updateFinalEquipmentsRoute);
+const deleteFinlEquipmentsRoute = require('./routes/cruds/deleteEquipment');
+app.use('/api/final-delete-equipment', deleteFinlEquipmentsRoute);
+
 // FACILITIES
 const createFacilitiesRoute = require('./routes/cruds/createFacilities');
 app.use('/api/create-facilities', createFacilitiesRoute);
 const fetchFacilitiesRoute = require('./routes/cruds/fetchFacilities');
 app.use('/api/fetch-facilities', fetchFacilitiesRoute);
+const updateFacilitiesRoute = require('./routes/cruds/updateFacilities');
+app.use('/api/update-facilities', updateFacilitiesRoute);
+const deleteFacilitiesRoute = require('./routes/cruds/deleteFacilities');
+app.use('/api/delete-facilities', deleteFacilitiesRoute);
 
 const createRawVehicleBooking = require('./routes/booking/createRawVehicleBooking');
 app.use('/api/create-raw-vehicle-booking', createRawVehicleBooking);
