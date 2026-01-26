@@ -300,6 +300,37 @@ export default function VehicleBooking() {
         fetchBookings();
     }, []);
 
+    const [editStatusId, setEditStatusId] = useState(null); // Track the booking ID being edited
+
+    const handleStatusChange = async (bookingId, newStatus) => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/update-status/${bookingId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                // Update the booking status in the state
+                setBookings((prevBookings) =>
+                    prevBookings.map((b) =>
+                        b.id === bookingId ? { ...b, status: data.booking.status } : b
+                    )
+                );
+                setEditStatusId(null); // Exit edit mode
+            } else {
+                alert(data.message || 'Failed to update status');
+            }
+        } catch (err) {
+            console.error('Error updating status:', err);
+            alert('Server error, could not update status.');
+        }
+    };
+
+
+    const statuses = ['Pending', 'Approved', 'Declined']; // Define available statuses
+
     function toTitleCase(str) {
         if (!str) return '';
         return str.replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -502,7 +533,6 @@ export default function VehicleBooking() {
                                             <th className="px-4 py-2 text-left text-xs font-bold">Requestor</th>
                                             <th className="px-4 py-2 text-left text-xs font-bold">Department</th>
                                             <th className="px-4 py-2 text-left text-xs font-bold">Date</th>
-                                            <th className="px-4 py-2 text-left text-xs font-bold">Status</th>
                                             <th className="px-4 py-2 text-left text-xs font-bold">Purpose</th>
                                         </tr>
                                     </thead>
@@ -515,7 +545,6 @@ export default function VehicleBooking() {
                                                 <td className="px-4 py-2">
                                                     {new Date(c.date).toLocaleDateString('en-US')}
                                                 </td>
-                                                <td className="px-4 py-2">{c.status}</td>
                                                 <td className="px-4 py-2">{c.purpose}</td>
                                             </tr>
                                         ))}
@@ -629,6 +658,7 @@ export default function VehicleBooking() {
                             <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Department</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Date</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Purpose</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Status</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Payment</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase rounded-tr-xl">Actions</th>
                         </tr>
@@ -636,7 +666,7 @@ export default function VehicleBooking() {
                     <tbody className="bg-white divide-y divide-gray-100">
                         {bookings.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="text-center py-8 text-gray-500">No vehicle bookings yet.</td>
+                                <td colSpan={8} className="text-center py-8 text-gray-500">No vehicle bookings yet.</td>
                             </tr>
                         ) : (
                             bookings.filter(b =>
@@ -693,6 +723,39 @@ export default function VehicleBooking() {
 
                                         {/* Purpose */}
                                         <td className="px-6 py-4">{b.purpose}</td>
+                                        <td className="px-6 py-4 " onClick={(e) => e.stopPropagation()}>
+                                            {editStatusId === b.id ? (
+                                                <select
+                                                    value={b.status}
+                                                    onChange={(e) => handleStatusChange(b.id, e.target.value)}
+                                                    onBlur={() => setEditStatusId(null)} // Exit edit mode on blur
+                                                    autoFocus
+                                                    className="border rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#96161C]"
+                                                >
+                                                    {statuses.map((status) => (
+                                                        <option key={status} value={status}>
+                                                            {status}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <span
+                                                    className={`px-3 py-1 rounded-full text-xs font-bold shadow
+                                                    ${b.status === 'Approved'
+                                                            ? 'bg-green-100 text-green-700 border border-green-300'
+                                                            : b.status === 'Pending'
+                                                                ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                                                                : 'bg-red-100 text-red-700 border border-red-300'
+                                                        }`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setEditStatusId(b.id); // Enable edit mode for this booking
+                                                    }}
+                                                >
+                                                    {b.status}
+                                                </span>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4">{b.payment}</td>
 
                                         {/* Admin or User-specific Actions */}
@@ -771,7 +834,7 @@ export default function VehicleBooking() {
                                     {/* Expanded Detail Row */}
                                     {expandedRow === index && (
                                         <tr className="bg-gray-50">
-                                            <td colSpan={6} className="px-6 py-4">
+                                            <td colSpan={8} className="px-6 py-4">
                                                 <div className="p-4 rounded-lg border border-gray-200 bg-white flex flex-col md:flex-row md:justify-between gap-4 items-start">
 
                                                     {/* Booking Details */}

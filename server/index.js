@@ -180,6 +180,8 @@ app.use('/api/delete-facilities', deleteFacilitiesRoute);
 
 const createRawVehicleBooking = require('./routes/booking/createRawVehicleBooking');
 app.use('/api/create-raw-vehicle-booking', createRawVehicleBooking);
+const updateStatusRoute = require('./routes/booking/updateStatus');
+app.use('/api/update-status', updateStatusRoute);
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
