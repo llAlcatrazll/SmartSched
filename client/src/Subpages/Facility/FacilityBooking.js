@@ -89,7 +89,7 @@ export default function Booking() {
         }
     }, [showVehicle]);
     const [schedules, setSchedules] = useState([
-        { date: '' || null, startTime: '' || null, endTime: '' || null }
+        { date: '', startTime: '', endTime: '' } // Initialize with empty strings
     ]);
 
     const downloadReceipt = () => {
