@@ -7,19 +7,19 @@ const pool = new Pool({
 });
 
 router.get('/fetch-related-vehicle-bookings', async (req, res) => {
-    const { booking_id } = req.query;
+    const { date, requestor } = req.query;
 
-    if (!booking_id) {
-        return res.status(400).json({ success: false, message: 'Booking ID is required' });
+    if (!date || !requestor) {
+        return res.status(400).json({ success: false, message: 'Date and Requestor are required' });
     }
 
     try {
         const result = await pool.query(
             `SELECT v.id, v.plate_number, v.vehicle_type, v.passenger_capacity
              FROM "Vehicles" v
-             JOIN "Bookings_Vehicles" bv ON v.id = bv.vehicle_id
-             WHERE bv.booking_id = $1`,
-            [booking_id]
+             JOIN "VehicleBookings" vb ON v.id = vb.vehicle_id
+             WHERE vb.date = $1 AND vb.requestor = $2`,
+            [date, requestor]
         );
 
         res.json({

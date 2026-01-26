@@ -162,6 +162,52 @@ export default function Booking() {
     const bookingId = booking?.id ?? null;
     const vehicles = booking?.vehicles ?? [];
     const equipment = bookingId ? equipmentMap?.[bookingId] ?? [] : [];
+    const [referenceVehicles, setReferenceVehicles] = useState([]);
+    useEffect(() => {
+        const fetchReferenceVehicles = async () => {
+            try {
+                const res = await fetch('http://localhost:5000/api/fetch-vehicles');
+                if (!res.ok) throw new Error('Failed to fetch vehicles');
+                const data = await res.json();
+                setReferenceVehicles(data);
+            } catch (error) {
+                console.error('Error fetching vehicles:', error);
+            }
+        };
+        fetchReferenceVehicles();
+    }, []);
+    const referenceVehicleMap = referenceVehicles.reduce((acc, vehicle) => {
+        if (!vehicle.deleted) { // only include active vehicles
+            if (!acc[vehicle.booker_id]) acc[vehicle.booker_id] = [];
+            acc[vehicle.booker_id].push(vehicle);
+        }
+        return acc;
+    }, {});
+    // Make a function to attach related vehicles to each booking
+    const bookingsWithVehicles = bookings.map(booking => {
+        // Convert booking date to string YYYY-MM-DD for comparison
+        const bookingDateStr = (booking.event_date || booking.date || '').split('T')[0];
+
+        const matchedVehicles = referenceVehicles.filter(vehicle => {
+            const vehicleDateStr = (vehicle.date || '').split('T')[0];
+            return (
+                !vehicle.deleted &&                  // skip deleted
+                vehicleDateStr === bookingDateStr && // same date
+                (vehicle.purpose || '').toLowerCase().includes((booking.event_name || '').toLowerCase())
+            );
+        });
+
+        if (matchedVehicles.length > 0) {
+            console.log(`MATCH FOUND FOR BOOKING: ${booking.event_name.toUpperCase()} ON ${bookingDateStr}`);
+        }
+
+        return {
+            ...booking,
+            matchedVehicles
+        };
+    });
+
+
 
     const handleReservationChange = async (bookingId, value) => {
         try {
@@ -1824,15 +1870,25 @@ export default function Booking() {
                                                     : b.time}
                                             </td>
 
-                                            {UserisNotAdmin ?
-
-                                                ((parseInt(b.creator_id) === parseInt(currentUserId)) ?
-                                                    <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#a31d23]" >{b.organization}</td>
-                                                    :
-                                                    <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#daa7aa]" >Hidden</td>
+                                            {UserisNotAdmin
+                                                ? (
+                                                    <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#a31d23]">
+                                                        {affiliations.find(a => a.id === Number(b.organization))?.abbreviation || ` ${b.organization}`}
+                                                    </td>
                                                 )
-                                                :
-                                                <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#a31d23]" >{b.organization}</td>}
+                                                : (
+                                                    (parseInt(b.creator_id) === parseInt(currentUserId))
+                                                        ? (
+                                                            <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#a31d23]">
+                                                                {affiliations.find(a => a.id === Number(b.organization))?.abbreviation || `${b.organization}`}
+                                                            </td>
+                                                        )
+                                                        : (
+                                                            <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#daa7aa]">Hidden</td>
+                                                        )
+                                                )
+                                            }
+
                                             {/* <td className="px-6 py-4 whitespace-nowrap">{b.organization || b.org || '-'}</td> */}
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                                 {equipmentMap[b.id]?.length > 0 ? (
@@ -2128,32 +2184,47 @@ export default function Booking() {
                                         <section className="flex flex-col gap-10">
 
                                             {/* Vehicles */}
-                                            <div>
-                                                <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                                    <Car size={20} />
-                                                    Vehicle Reservations
-                                                </h3>
+                                            <div className="mt-8">
+                                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Vehicles</h3>
 
-                                                {vehicles.length > 0 ? (
-                                                    <div className="rounded-lg bg-gray-50 divide-y">
-                                                        {vehicles.map((v, idx) => (
-                                                            <div
-                                                                key={idx}
-                                                                className="flex justify-between px-4 py-3"
-                                                            >
-                                                                <span>{v?.vehicle_type ?? "Unknown vehicle"}</span>
-                                                                <span className="text-gray-700">
-                                                                    {v?.plate_number ?? "N/A"}
-                                                                </span>
-                                                            </div>
+                                                {/* All vehicles from referenceVehicleMap
+                                                {referenceVehicleMap[selectedBooking.id]?.length > 0 ? (
+                                                    <ul className="list-disc list-inside">
+                                                        {referenceVehicleMap[selectedBooking.id].map((v, idx) => (
+                                                            <li key={idx}>
+                                                                Vehicle ID: {v.vehicle_id}, Requestor: {v.requestor}, Date: {new Date(v.date).toLocaleString()}
+                                                            </li>
                                                         ))}
-                                                    </div>
+                                                    </ul>
                                                 ) : (
-                                                    <p className="text-gray-500 italic">
-                                                        No vehicle reservations
-                                                    </p>
-                                                )}
+                                                    <p className="text-gray-500 italic">No vehicles booked</p>
+                                                )} */}
+
+                                                {/* Matched vehicles cross-referenced with booking */}
+                                                <div className="mt-6">
+                                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Matched Vehicles</h3>
+                                                    {selectedBooking?.matchedVehicles?.length > 0 ? (
+                                                        <ul className="list-disc list-inside">
+                                                            {selectedBooking.matchedVehicles.map((v, idx) => (
+                                                                <li key={idx}>
+                                                                    Vehicle ID: {v.vehicle_id}, Requestor: {v.requestor}, Purpose: {v.purpose}, Date: {new Date(v.date).toLocaleString()}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    ) : (
+                                                        <p className="text-gray-500 italic">No vehicles booked for this event</p>
+                                                    )}
+
+                                                    {/* LOG IN ALL CAPS */}
+                                                    {selectedBooking?.matchedVehicles?.length > 0 && console.log(
+                                                        `MATCH FOUND FOR BOOKING: ${selectedBooking.event_name.toUpperCase()} ON ${(selectedBooking.event_date || selectedBooking.date).split('T')[0]}`
+                                                    )}
+                                                </div>
                                             </div>
+
+
+
+
 
                                             {/* Actions */}
                                             <div>
