@@ -1187,6 +1187,7 @@ export default function Booking() {
                                     <input
                                         type="text"
                                         name="requestedBy"
+                                        maxLength={19}
                                         value={form.requestedBy}
                                         onChange={handleChange}
                                         placeholder="Juan De la Cruz"
