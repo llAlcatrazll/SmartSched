@@ -581,7 +581,7 @@ export default function VehicleBooking() {
                                 <textarea
                                     name="destination"
                                     value={form.destination}
-                                    placeholder='Milala National Highschool, Bataan wew'
+                                    placeholder={'Milala National Highschool, Bataan wew \n Create a list for multiple destinations'}
                                     onChange={handleChange}
                                     className="w-full border rounded-lg px-4 py-2"
                                     required

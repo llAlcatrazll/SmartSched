@@ -44,26 +44,47 @@ router.post('/', async (req, res) => {
     }
 
     try {
+        // 1️⃣ Check for driver conflict
+        const conflictCheck = await pool.query(
+            `
+            SELECT id
+            FROM "VehicleBooking"
+            WHERE driver_id = $1
+              AND date = $2
+              AND deleted = false
+            LIMIT 1
+            `,
+            [driver_id, date]
+        );
+
+        if (conflictCheck.rows.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Driver is already booked on this date!"
+            });
+        }
+
+        // 2️⃣ Insert booking
         const result = await pool.query(
             `
-      INSERT INTO "VehicleBooking"
-      (
-        vehicle_id,
-        driver_id,
-        requestor,
-        department_id,
-        date,
-        purpose,
-        destination,
-        booker_id,
-        deleted,
-        payment,
-        status
-      )
-      VALUES
-      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'Pending')
-      RETURNING *
-      `,
+            INSERT INTO "VehicleBooking"
+            (
+                vehicle_id,
+                driver_id,
+                requestor,
+                department_id,
+                date,
+                purpose,
+                destination,
+                booker_id,
+                deleted,
+                payment,
+                status
+            )
+            VALUES
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'Pending')
+            RETURNING *
+            `,
             [
                 Number(vehicle_id),
                 Number(driver_id),
