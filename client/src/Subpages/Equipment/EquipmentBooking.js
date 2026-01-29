@@ -18,22 +18,24 @@ export default function EquipmentBooking() {
     const [facilities, setFacilities] = useState([]);
     const [departments, setDepartments] = useState([]);
     const [bookings, setBookings] = useState([]);
-
+    const [editStatusId, setEditStatusId] = useState(null);
+    const [editingBookingId, setEditingBookingId] = useState(null);
+    const equipmentStatuses = ['Pending', 'Approved', 'Rejected', 'Returned'];
     const [expandedRow, setExpandedRow] = useState(null);
     const isAdmin = true;
-    // useEffect(() => {
-    //     if (!currentUserId) return;
+    useEffect(() => {
+        if (!currentUserId) return;
 
-    //     const fetchUserEquipments = async () => {
-    //         const res = await fetch(
-    //             `http://localhost:5000/api/user-equipments-fetch/${currentUserId}`
-    //         );
-    //         const data = await res.json();
-    //         setUserEquipmentIds((data.equipments || []).map(Number));
-    //     };
+        const fetchUserEquipments = async () => {
+            const res = await fetch(
+                `http://localhost:5000/api/user-equipments-fetch/${currentUserId}`
+            );
+            const data = await res.json();
+            setUserEquipmentIds((data.equipments || []).map(Number));
+        };
 
-    //     fetchUserEquipments();
-    // }, [currentUserId]);
+        fetchUserEquipments();
+    }, [currentUserId]);
     useEffect(() => {
         const { date, timeStart, timeEnd, facilityId } = equipmentForm;
 
@@ -67,6 +69,35 @@ export default function EquipmentBooking() {
         equipmentForm.timeEnd,
         equipmentForm.facilityId
     ]);
+    const handleEquipmentStatusChange = async (bookingId, newStatus) => {
+        try {
+            const res = await fetch(
+                `http://localhost:5000/api/update-equipment-status/${bookingId}`,
+                {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                }
+            );
+
+            const data = await res.json();
+
+            if (data.success) {
+                setBookings(prev =>
+                    prev.map(b =>
+                        b.id === bookingId ? { ...b, status: data.booking.status } : b
+                    )
+                );
+            } else {
+                alert(data.message || 'Failed to update status');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error updating status');
+        } finally {
+            setEditStatusId(null);
+        }
+    };
 
     useEffect(() => {
         if (!bookings.length || !currentUserId) return;
@@ -144,40 +175,40 @@ export default function EquipmentBooking() {
     };
 
     // ========================== FILTER AVAILABLE EQUIPMENTS ==========================
-    useEffect(() => {
-        const { date, timeStart, timeEnd } = equipmentForm;
-        if (!date || !timeStart || !timeEnd) {
-            setFilteredEquipments([]);
-            return;
-        }
+    // useEffect(() => {
+    //     const { date, timeStart, timeEnd } = equipmentForm;
+    //     if (!date || !timeStart || !timeEnd) {
+    //         setFilteredEquipments([]);
+    //         return;
+    //     }
 
-        const toMinutes = t => {
-            const [h, m] = t.split(':').map(Number);
-            return h * 60 + m;
-        };
-        const startMin = toMinutes(timeStart);
-        const endMin = toMinutes(timeEnd);
+    //     const toMinutes = t => {
+    //         const [h, m] = t.split(':').map(Number);
+    //         return h * 60 + m;
+    //     };
+    //     const startMin = toMinutes(timeStart);
+    //     const endMin = toMinutes(timeEnd);
 
-        const availableNow = availableEquipments.filter(eq => {
-            for (let b of bookings) {
-                if (!b.equipments || !Array.isArray(b.equipments)) continue;
-                if (!b.dates || !b.timeStart || !b.timeEnd) continue;
+    //     const availableNow = availableEquipments.filter(eq => {
+    //         for (let b of bookings) {
+    //             if (!b.equipments || !Array.isArray(b.equipments)) continue;
+    //             if (!b.dates || !b.timeStart || !b.timeEnd) continue;
 
-                const bookedDate = new Date(b.dates[0]).toISOString().split('T')[0];
-                if (bookedDate !== date) continue;
+    //             const bookedDate = new Date(b.dates[0]).toISOString().split('T')[0];
+    //             if (bookedDate !== date) continue;
 
-                if (!b.equipments.some(beq => parseInt(beq.equipmentId) === eq.id)) continue;
+    //             if (!b.equipments.some(beq => parseInt(beq.equipmentId) === eq.id)) continue;
 
-                const bookedStart = toMinutes(b.timeStart);
-                const bookedEnd = toMinutes(b.timeEnd);
+    //             const bookedStart = toMinutes(b.timeStart);
+    //             const bookedEnd = toMinutes(b.timeEnd);
 
-                if (startMin < bookedEnd && endMin > bookedStart) return false; // conflict
-            }
-            return true;
-        });
+    //             if (startMin < bookedEnd && endMin > bookedStart) return false; // conflict
+    //         }
+    //         return true;
+    //     });
 
-        setFilteredEquipments(availableNow);
-    }, [equipmentForm.date, equipmentForm.timeStart, equipmentForm.timeEnd, availableEquipments, bookings]);
+    //     setFilteredEquipments(availableNow);
+    // }, [equipmentForm.date, equipmentForm.timeStart, equipmentForm.timeEnd, availableEquipments, bookings]);
 
     const getFilteredEquipmentsForDropdown = (index) => {
         const selectedIds = equipmentForm.equipments.filter((_, i) => i !== index);
@@ -186,14 +217,25 @@ export default function EquipmentBooking() {
 
     // ========================== SUBMIT HANDLER ==========================
     const handleSubmit = async (e) => {
-        e.preventDefault();
 
+        e.preventDefault();
+        if (
+            equipmentForm.timeStart < '06:00' ||
+            equipmentForm.timeEnd > '22:00'
+        ) {
+            alert('Bookings are only allowed between 6:00 AM and 10:00 PM');
+            return;
+        }
+
+        if (equipmentForm.timeEnd < equipmentForm.timeStart) {
+            alert('End time cannot be earlier than start time');
+            return;
+        }
         if (!equipmentForm.date || !equipmentForm.timeStart || !equipmentForm.timeEnd) {
             alert("Please select date and time first.");
             return;
         }
 
-        // ✅ Build payload FIRST
         const payload = {
             equipments: equipmentForm.equipments.map(id => ({
                 equipmentId: Number(id),
@@ -203,47 +245,60 @@ export default function EquipmentBooking() {
             facilityId: equipmentForm.facilityId,
             purpose: equipmentForm.purpose,
             date: equipmentForm.date,
-            timeStart: equipmentForm.timeStart, // must be HH:mm
-            timeEnd: equipmentForm.timeEnd      // must be HH:mm
+            timeStart: equipmentForm.timeStart,
+            timeEnd: equipmentForm.timeEnd
         };
 
+        const isEditing = Boolean(editingBookingId);
+        const url = isEditing
+            ? `http://localhost:5000/api/update-equipment-booking/${editingBookingId}`
+            : 'http://localhost:5000/api/create-equipment-booking';
+
+        const method = isEditing ? 'PUT' : 'POST';
+
         try {
-            const res = await fetch('http://localhost:5000/api/create-equipment-booking', {
-                method: 'POST',
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
             const data = await res.json();
 
-            if (data.success) {
-                alert('Booking created!');
-
-                // 🔄 refresh bookings
-                const bookRes = await fetch('http://localhost:5000/api/fetch-equipment-bookings');
-                const bookingsData = await bookRes.json();
-                if (bookingsData.success) {
-                    setBookings(bookingsData.bookings);
-                }
-
-                // ♻️ reset form
-                setEquipmentForm({
-                    equipments: [''],
-                    facilityId: '',
-                    departmentId: '',
-                    purpose: '',
-                    date: '',
-                    timeStart: '',
-                    timeEnd: ''
-                });
-            } else {
-                alert(data.message || 'Failed to create booking');
+            if (!data.success) {
+                alert(data.message || 'Failed to save booking');
+                return;
             }
+
+            alert(isEditing ? 'Booking updated!' : 'Booking created!');
+
+            // 🔄 refresh bookings
+            const bookRes = await fetch('http://localhost:5000/api/fetch-equipment-bookings');
+            const bookingsData = await bookRes.json();
+            if (bookingsData.success) {
+                setBookings(bookingsData.bookings);
+            }
+
+            // ♻️ reset form + exit edit mode
+            setEquipmentForm({
+                equipments: [''],
+                facilityId: '',
+                departmentId: '',
+                purpose: '',
+                date: '',
+                timeStart: '',
+                timeEnd: ''
+            });
+
+            setEditingBookingId(null);
+            setShowEquipmentForm(false);
+
         } catch (err) {
             console.error(err);
-            alert('Error creating booking');
+            alert('Error saving booking');
         }
     };
+
 
 
     // ========================== HELPERS ==========================
@@ -279,7 +334,21 @@ export default function EquipmentBooking() {
         }
     };
 
-    const handleEdit = (index) => alert(`Edit booking at index ${index}`);
+    const handleEdit = (booking) => {
+        setEquipmentForm({
+            equipments: [booking.equipment_type_id.toString()],
+            departmentId: booking.affiliation_id.toString(),
+            facilityId: booking.facility_id.toString(),
+            purpose: booking.purpose,
+            date: booking.dates[0],
+            timeStart: booking.time_start?.slice(0, 5) || '',
+            timeEnd: booking.time_end?.slice(0, 5) || ''
+        });
+
+        setEditingBookingId(booking.id);
+        setShowEquipmentForm(true);
+    };
+
 
     // ========================== ✅ DELETE BOOKING ==========================
     const handleDelete = async (bookingId) => {
@@ -307,7 +376,16 @@ export default function EquipmentBooking() {
             alert("Error deleting booking");
         }
     };
+    useEffect(() => {
+        const { timeStart, timeEnd } = equipmentForm;
 
+        if (timeStart && timeEnd && timeEnd < timeStart) {
+            setEquipmentForm(prev => ({
+                ...prev,
+                timeEnd: timeStart
+            }));
+        }
+    }, [equipmentForm.timeStart]);
     // ========================== RENDER ==========================
     return (
         <div>
@@ -413,7 +491,11 @@ export default function EquipmentBooking() {
                                 <input
                                     type="time"
                                     value={equipmentForm.timeStart}
-                                    onChange={e => setEquipmentForm({ ...equipmentForm, timeStart: e.target.value })}
+                                    min="06:00"
+                                    max="22:00"
+                                    onChange={(e) =>
+                                        setEquipmentForm({ ...equipmentForm, timeStart: e.target.value })
+                                    }
                                 />
                             </div>
 
@@ -422,7 +504,11 @@ export default function EquipmentBooking() {
                                 <input
                                     type="time"
                                     value={equipmentForm.timeEnd}
-                                    onChange={e => setEquipmentForm({ ...equipmentForm, timeEnd: e.target.value })}
+                                    min={equipmentForm.timeStart || '06:00'}
+                                    max="22:00"
+                                    onChange={(e) =>
+                                        setEquipmentForm({ ...equipmentForm, timeEnd: e.target.value })
+                                    }
                                 />
                             </div>
 
@@ -431,9 +517,10 @@ export default function EquipmentBooking() {
                                 <input
                                     type="date"
                                     value={equipmentForm.date}
-                                    onChange={e => setEquipmentForm({ ...equipmentForm, date: e.target.value })}
-                                    className="border rounded px-3 py-2 w-full"
-                                    required
+                                    min={new Date().toISOString().split('T')[0]}
+                                    onChange={(e) =>
+                                        setEquipmentForm({ ...equipmentForm, date: e.target.value })
+                                    }
                                 />
                             </div>
                         </div>
@@ -507,23 +594,43 @@ export default function EquipmentBooking() {
                                             : '—'}
                                     </td>
                                     <td className="px-6 py-4">{b.purpose}</td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                                         {!hasPivotAccess ? (
                                             <span className="text-gray-400 italic">No Access</span>
+                                        ) : editStatusId === b.id ? (
+                                            <select
+                                                value={b.status}
+                                                onChange={(e) =>
+                                                    handleEquipmentStatusChange(b.id, e.target.value)
+                                                }
+                                                onBlur={() => setEditStatusId(null)}
+                                                autoFocus
+                                                className="border rounded-lg px-3 py-2 text-sm"
+                                            >
+                                                {equipmentStatuses.map(status => (
+                                                    <option key={status} value={status}>
+                                                        {status}
+                                                    </option>
+                                                ))}
+                                            </select>
                                         ) : (
                                             <span
-                                                className={`px-3 py-1 rounded-full text-xs font-bold
-            ${b.status === 'Approved'
+                                                className={`px-3 py-1 rounded-full text-xs font-bold cursor-pointer
+        ${b.status === 'Approved'
                                                         ? 'bg-green-100 text-green-700 border border-green-300'
                                                         : b.status === 'Rejected'
                                                             ? 'bg-red-100 text-red-700 border border-red-300'
-                                                            : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                                                            : b.status === 'Returned'
+                                                                ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                                                : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
                                                     }`}
+                                                onClick={() => setEditStatusId(b.id)}
                                             >
                                                 {b.status}
                                             </span>
                                         )}
                                     </td>
+
 
                                     <td className="px-6 py-4 flex gap-2">
                                         {!hasPivotAccess ? (
@@ -531,7 +638,7 @@ export default function EquipmentBooking() {
                                         ) : isAdmin ? (
                                             <>
                                                 <button
-                                                    onClick={(e) => { e.stopPropagation(); handleEdit(index); }}
+                                                    onClick={(e) => { e.stopPropagation(); handleEdit(b); }}
                                                     className="px-4 py-1 text-sm font-semibold rounded-full border border-[#96161C] text-[#96161C]"
                                                 >
                                                     Edit

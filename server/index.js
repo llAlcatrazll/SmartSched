@@ -219,6 +219,18 @@ const availableEquipments = require('./routes/cruds/availableEquipments');
 app.use('/api', userVehiclesRoutes);
 app.use('/api', userEquipmentsRoutes);
 app.use('/api', availableEquipments);
+const updateEquipmentStatus = require('./routes/cruds/updateEquipmentStatus');
+
+app.use('/api/update-equipment-status', updateEquipmentStatus);
+
+const updateEquipmentBooking = require('./routes/cruds/updateEquipmentBooking');
+app.use('/api/update-equipment-booking', updateEquipmentBooking);
+
+
+
+
+
+// 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
