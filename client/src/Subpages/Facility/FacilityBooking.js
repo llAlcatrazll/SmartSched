@@ -1363,7 +1363,7 @@ export default function Booking() {
 
                                 </div>
                                 <div>
-                                    <button
+                                    {/* <button
                                         type="button"
                                         onClick={() => {
                                             if (equipmentRows.length < 5) {
@@ -1373,7 +1373,7 @@ export default function Booking() {
                                         className="bg-[#96161C] text-white px-8 py-2 rounded-lg font-semibold hover:bg-[#7a1217] transition"
                                     >
                                         Add Equipment +
-                                    </button>
+                                    </button> */}
                                     {equipmentRows.map((row, index) => (
                                         <div key={index} className="flex gap-4 items-center my-2">
                                             <div className="flex-1">
@@ -1784,7 +1784,7 @@ export default function Booking() {
                                 <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">Date</th>
                                 <th className="px-2 py-3 text-sm font-bold text-white uppercase tracking-wider text-center">Time</th>
                                 <th className="px-6 py-3 text-left text-sm font-bold text-white uppercase tracking-wider">Org/Dept</th>
-                                <th className="px-6 py-2 text-left text-sm font-bold text-white uppercase tracking-wider">Equipment</th>
+                                {/* <th className="px-6 py-2 text-left text-sm font-bold text-white uppercase tracking-wider">Equipment</th> */}
                                 <th className="px-6 py-2 text-left text-sm font-bold text-white uppercase tracking-wider">Type</th>
                                 <th className="px-6 py-2 text-left text-sm font-bold text-white uppercase tracking-wider">Booker</th>
                                 {showRequesterInfo && (
@@ -1892,7 +1892,7 @@ export default function Booking() {
                                             }
 
                                             {/* <td className="px-6 py-4 whitespace-nowrap">{b.organization || b.org || '-'}</td> */}
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                            {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                                 {equipmentMap[b.id]?.length > 0 ? (
                                                     <ul className="list-disc list-inside space-y-1">
                                                         {equipmentMap[b.id].map((item, idx) => (
@@ -1902,7 +1902,7 @@ export default function Booking() {
                                                 ) : (
                                                     <span className="text-gray-400 italic">No equipment</span>
                                                 )}
-                                            </td>
+                                            </td> */}
                                             <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={(e) => e.stopPropagation()}>
                                                 {editReservationId === b.id ? (
                                                     <select

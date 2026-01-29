@@ -22,7 +22,9 @@ import Equipments from '../Subpages/Equipments';
 import FacilityDashboard from '../Subpages/FacilityDashboard';
 import VehicleDashboard from '../Subpages/VehicleDashboard';
 import Drivers from '../Subpages/Drivers';
-
+// Equipment
+import EquipmentBooking from '../Subpages/Equipment/EquipmentBooking';
+import EquipmentCalendar from '../Subpages/Equipment/EquipmentCalendar';
 // ✅ Updated helper — now handles both facility & vehicle bookings
 async function sendCohereChatMessage(message, bookingsPayload = {}, currentDateTime) {
     try {
@@ -52,6 +54,7 @@ export default function LandingPage() {
         { from: 'bot', text: 'Hi! How can I help you today?, `\n`Would u like to book a Facility or Vehicle for an event?' }
     ]);
     const [isManagementOpen, setIsManagementOpen] = useState(true);
+    const [isEquipmentOpen, setisEquipmentOpen] = useState(true);
 
 
     const [bookings, setBookings] = useState([]);
@@ -188,6 +191,8 @@ export default function LandingPage() {
         case 'facility-dashboard': RenderedPage = < FacilityDashboard />; break;
         case 'vehicle-dashboard': RenderedPage = <VehicleDashboard />; break;
         case 'manage-drivers': RenderedPage = <Drivers />; break;
+        case 'equipment-calendar': RenderedPage = <EquipmentCalendar />; break;
+        case 'equipment-booking': RenderedPage = <EquipmentBooking />; break;
         default: RenderedPage = <Dashboard />;
     }
 
@@ -300,8 +305,33 @@ export default function LandingPage() {
                         </>
                     )}
 
-
-
+                    <button
+                        onClick={() => setisEquipmentOpen(!isEquipmentOpen)}
+                        className="px-2 pt-4 text-xs font-bold text-[#ffa7a7] uppercase tracking-wider text-left w-full"
+                    >
+                        Equipment Bookings {isEquipmentOpen ? '▾' : '▸'}
+                    </button>
+                    {isEquipmentOpen && (
+                        <>
+                            {/* Keep each item separate so you can change them later */}
+                            {user?.role === 'admin' && (
+                                <SidebarItem
+                                    icon={<UserCog size={20} />}
+                                    label="Equipment Calendar"
+                                    open={isSidebarOpen}
+                                    onClick={() => handleSetActivePage('equipment-calendar')}
+                                />
+                            )}
+                            {user?.role === 'admin' && (
+                                <SidebarItem
+                                    icon={<ScrollText size={20} />}
+                                    label="Equipment Booking"
+                                    open={isSidebarOpen}
+                                    onClick={() => handleSetActivePage('equipment-booking')}
+                                />
+                            )}
+                        </>
+                    )}
 
                     {/* Facility Section */}
                     {isSidebarOpen && (

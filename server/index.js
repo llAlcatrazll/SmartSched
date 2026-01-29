@@ -198,6 +198,19 @@ app.use('/api/drivers-by-vehicle', fetchDriversByVehicle);
 
 const relatedVehicleBookings = require('./routes/cruds/fetchRelatedVehicleBookings')
 app.use('/api/related-vehicle-bookings', relatedVehicleBookings);
+
+const userFacilitiesRoute = require('./routes/booking/userFacilities');
+app.use('/api/user-facilities', userFacilitiesRoute);
+const userFacilitiesFetchRoute = require('./routes/booking/userFacilitiesFetch');
+app.use('/api/user-facilities-fetch', userFacilitiesFetchRoute);
+
+const createEquipmentBookingRoute = require('./routes/booking/createEquipmentBooking');
+app.use('/api/create-equipment-booking', createEquipmentBookingRoute);
+
+const fetchEquipmentBookingsRoute = require('./routes/booking/fetchEquipmentBookings');
+app.use('/api/fetch-equipment-bookings', fetchEquipmentBookingsRoute);
+
+
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
