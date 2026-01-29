@@ -209,6 +209,14 @@ app.use('/api/create-equipment-booking', createEquipmentBookingRoute);
 
 const fetchEquipmentBookingsRoute = require('./routes/booking/fetchEquipmentBookings');
 app.use('/api/fetch-equipment-bookings', fetchEquipmentBookingsRoute);
+const deleteEquipmentBookingRoute = require('./routes/booking/deleteEquipmentBooking');
+app.use('/api/delete-equipment-booking', deleteEquipmentBookingRoute);
+
+const userVehiclesRoutes = require('./routes/booking/userVehicles');
+const userEquipmentsRoutes = require('./routes/booking/userEquipments');
+
+app.use('/api', userVehiclesRoutes);
+app.use('/api', userEquipmentsRoutes);
 
 
 app.listen(port, () => {

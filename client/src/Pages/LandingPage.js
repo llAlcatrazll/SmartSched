@@ -343,9 +343,9 @@ export default function LandingPage() {
                                 <>
                                     <SidebarItem icon={<Calendar size={20} />} label="Facility Calendar" open={isSidebarOpen} onClick={() => handleSetActivePage('calendar')} />
                                     <SidebarItem icon={<ClipboardList size={20} />} label="Facility Bookings" open={isSidebarOpen} onClick={() => handleSetActivePage('booking')} />
-                                    {user?.role === 'admin' && (
+                                    {/* {user?.role === 'admin' && (
                                         <SidebarItem icon={<Calendar size={20} />} label="Manage Equipment" open={isSidebarOpen} onClick={() => handleSetActivePage('manage-equipment')} />
-                                    )}
+                                    )} */}
                                 </>
                             )}
                         </>

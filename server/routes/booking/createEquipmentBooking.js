@@ -19,8 +19,8 @@ const pool = new Pool({
  *   specificDates: array of strings (YYYY-MM-DD),
  *   rangeStart: string (YYYY-MM-DD),
  *   rangeEnd: string (YYYY-MM-DD),
- *   timeStart: string,
- *   timeEnd: string
+ *   timeStart: string (HH:MM),
+ *   timeEnd: string (HH:MM)
  * }
  */
 router.post('/', async (req, res) => {
@@ -63,13 +63,43 @@ router.post('/', async (req, res) => {
     }
 
     try {
+        // Check conflicts for each equipment and date
+        for (const eq of equipments) {
+            for (const bookingDate of datesArray) {
+                const conflictQuery = `
+                    SELECT *
+                    FROM "Equipment"
+                    WHERE equipment_type_id = $1
+                    AND $2 = ANY(dates)
+                    AND facility_id = $3
+                    AND (
+                        ($4::time < time_end AND $5::time > time_start)
+                    )
+                `;
+                const { rows: conflicts } = await pool.query(conflictQuery, [
+                    eq.equipmentId,
+                    bookingDate,
+                    facilityId,
+                    timeStart,
+                    timeEnd
+                ]);
+
+                if (conflicts.length > 0) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Conflict: Equipment ID ${eq.equipmentId} is already booked on ${bookingDate} from ${conflicts[0].time_start} to ${conflicts[0].time_end}`
+                    });
+                }
+            }
+        }
+
         // Insert each equipment booking into the database
         for (const eq of equipments) {
             await pool.query(
                 `INSERT INTO "Equipment" (
-                    equipment_type_id, quantity, affiliation_id, facility_id, dates, purpose, created_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-                [eq.equipmentId, eq.quantity, departmentId, facilityId, datesArray, purpose]
+                    equipment_type_id, quantity, affiliation_id, facility_id, dates, purpose, time_start, time_end, created_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+                [eq.equipmentId, eq.quantity, departmentId, facilityId, datesArray, purpose, timeStart, timeEnd]
             );
         }
 

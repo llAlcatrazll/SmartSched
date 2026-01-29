@@ -18,16 +18,8 @@ export default function EquipmentBooking() {
     const [departments, setDepartments] = useState([]);
     const [bookings, setBookings] = useState([]);
 
-    const [filter, setFilter] = useState({
-        searchEquipment: '',
-        department: 'All',
-        facility: 'All',
-        dateFrom: '',
-        dateTo: ''
-    });
-
     const [expandedRow, setExpandedRow] = useState(null);
-    const isAdmin = true; // just for demo
+    const isAdmin = true;
 
     // ========================== FETCH DATA ==========================
     useEffect(() => {
@@ -74,17 +66,7 @@ export default function EquipmentBooking() {
         setEquipmentForm({ ...equipmentForm, equipments: updated });
     };
 
-    const handleFilterChange = (e) => {
-        const { name, value } = e.target;
-        setFilter(prev => ({ ...prev, [name]: value }));
-    };
-
-    const getFilteredEquipmentsForDropdown = (index) => {
-        const selectedIds = equipmentForm.equipments.filter((_, i) => i !== index);
-        return filteredEquipments.filter(eq => !selectedIds.includes(eq.id.toString()));
-    };
-
-    // ========================== CONFLICT FILTERING ==========================
+    // ========================== FILTER AVAILABLE EQUIPMENTS ==========================
     useEffect(() => {
         const { date, timeStart, timeEnd } = equipmentForm;
         if (!date || !timeStart || !timeEnd) {
@@ -112,51 +94,25 @@ export default function EquipmentBooking() {
                 const bookedStart = toMinutes(b.timeStart);
                 const bookedEnd = toMinutes(b.timeEnd);
 
-                if (startMin < bookedEnd && endMin > bookedStart) return false;
+                if (startMin < bookedEnd && endMin > bookedStart) return false; // conflict
             }
             return true;
         });
 
         setFilteredEquipments(availableNow);
-
     }, [equipmentForm.date, equipmentForm.timeStart, equipmentForm.timeEnd, availableEquipments, bookings]);
 
-    // ========================== HANDLE SUBMIT ==========================
-    const checkConflicts = () => {
-        const { equipments, date, timeStart, timeEnd } = equipmentForm;
-        if (!date || !timeStart || !timeEnd) return false;
-
-        const toMinutes = t => {
-            const [h, m] = t.split(':').map(Number);
-            return h * 60 + m;
-        };
-        const startMin = toMinutes(timeStart);
-        const endMin = toMinutes(timeEnd);
-
-        for (let b of bookings) {
-            if (!b.equipments || !Array.isArray(b.equipments)) continue;
-            const bookedDate = new Date(b.dates[0]).toISOString().split('T')[0];
-            if (bookedDate === date) {
-                for (let eq of equipments) {
-                    if (b.equipments.some(beq => beq.equipmentId === parseInt(eq))) {
-                        const bookedStart = toMinutes(b.timeStart);
-                        const bookedEnd = toMinutes(b.timeEnd);
-                        if (startMin < bookedEnd && endMin > bookedStart) {
-                            return `Conflict: Equipment already booked on ${date} from ${b.timeStart} to ${b.timeEnd}`;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
+    const getFilteredEquipmentsForDropdown = (index) => {
+        const selectedIds = equipmentForm.equipments.filter((_, i) => i !== index);
+        return filteredEquipments.filter(eq => !selectedIds.includes(eq.id.toString()));
     };
 
+    // ========================== SUBMIT HANDLER ==========================
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const conflictMsg = checkConflicts();
-        if (conflictMsg) {
-            alert(conflictMsg);
+        if (!equipmentForm.date || !equipmentForm.timeStart || !equipmentForm.timeEnd) {
+            alert("Please select date and time first.");
             return;
         }
 
@@ -170,6 +126,12 @@ export default function EquipmentBooking() {
             const data = await res.json();
             if (data.success) {
                 alert('Booking created!');
+
+                // refresh bookings after create
+                const bookRes = await fetch('http://localhost:5000/api/fetch-equipment-bookings');
+                const bookingsData = await bookRes.json();
+                if (bookingsData.success) setBookings(bookingsData.bookings);
+
                 setEquipmentForm({
                     equipments: [''],
                     facilityId: '',
@@ -188,7 +150,7 @@ export default function EquipmentBooking() {
         }
     };
 
-    // ========================== TABLE HELPERS ==========================
+    // ========================== HELPERS ==========================
     const getEquipmentName = (id) => availableEquipments.find(eq => eq.id === id)?.name || 'Unknown';
     const getDepartmentName = (id) => departments.find(d => d.id === id)?.abbreviation || 'Unknown';
     const getFacilityName = (id) => facilities.find(f => f.id === id)?.name || 'Unknown';
@@ -203,7 +165,7 @@ export default function EquipmentBooking() {
             return `${dateObjs[0].toLocaleDateString('en-US', options)}, ${year}`;
         }
 
-        // check consecutive
+        // consecutive check
         let isConsecutive = true;
         for (let i = 1; i < dateObjs.length; i++) {
             if ((dateObjs[i] - dateObjs[i - 1]) / (1000 * 60 * 60 * 24) !== 1) {
@@ -222,12 +184,37 @@ export default function EquipmentBooking() {
     };
 
     const handleEdit = (index) => alert(`Edit booking at index ${index}`);
-    const handleDelete = (index) => alert(`Delete booking at index ${index}`);
+
+    // ========================== ✅ DELETE BOOKING ==========================
+    const handleDelete = async (bookingId) => {
+        const confirmDelete = window.confirm("Are you sure you want to delete this booking?");
+        if (!confirmDelete) return;
+
+        try {
+            const res = await fetch(`http://localhost:5000/api/delete-equipment-booking/${bookingId}`, {
+                method: "DELETE"
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                alert(data.message || "Failed to delete booking");
+                return;
+            }
+
+            alert("Booking deleted!");
+
+            // remove from UI immediately
+            setBookings(prev => prev.filter(b => b.id !== bookingId));
+        } catch (err) {
+            console.error(err);
+            alert("Error deleting booking");
+        }
+    };
 
     // ========================== RENDER ==========================
     return (
         <div>
-            {/* EQUIPMENT FORM TOGGLE */}
             <div className="mb-6">
                 <button
                     className="w-full flex items-center justify-between px-8 py-5 bg-[#96161C] text-white text-xl font-bold rounded-t-xl focus:outline-none"
@@ -296,7 +283,6 @@ export default function EquipmentBooking() {
                             <div>
                                 <label className="block text-sm font-medium mb-1">Department*</label>
                                 <select
-                                    name="departmentId"
                                     value={equipmentForm.departmentId}
                                     onChange={e => setEquipmentForm({ ...equipmentForm, departmentId: e.target.value })}
                                     className="w-full border rounded-lg px-4 py-2"
@@ -314,7 +300,6 @@ export default function EquipmentBooking() {
                             <div>
                                 <label className="block text-sm font-medium mb-1">Facility*</label>
                                 <select
-                                    name="facilityId"
                                     value={equipmentForm.facilityId}
                                     onChange={e => setEquipmentForm({ ...equipmentForm, facilityId: e.target.value })}
                                     className="w-full border rounded-lg px-4 py-2"
@@ -391,7 +376,7 @@ export default function EquipmentBooking() {
                 )}
             </div>
 
-            {/* EQUIPMENT BOOKINGS TABLE */}
+            {/* BOOKINGS TABLE */}
             <div className="bg-white rounded-xl shadow-md overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-[#96161C]">
@@ -406,43 +391,38 @@ export default function EquipmentBooking() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
                         {bookings.map((b, index) => (
-                            <React.Fragment key={b.id}>
-                                <tr
-                                    className="hover:bg-gray-50 transition cursor-pointer"
-                                    onClick={() => setExpandedRow(expandedRow === index ? null : index)}
-                                >
-                                    <td className="px-6 py-4 font-medium text-gray-900">
-                                        {(() => {
-                                            const equipment = availableEquipments.find(eq => eq.id === b.equipment_type_id);
-                                            return equipment ? `${equipment.name} (${equipment.model_id})` : 'Unknown';
-                                        })()}
-                                    </td>
-                                    <td className="px-6 py-4">{getDepartmentName(b.affiliation_id)}</td>
-                                    <td className="px-6 py-4">{getFacilityName(b.facility_id)}</td>
-                                    <td className="px-6 py-4">{formatBookingDates(b.dates)}</td>
-                                    <td className="px-6 py-4">{b.purpose}</td>
-                                    <td className="px-6 py-4 flex gap-2">
-                                        {isAdmin ? (
-                                            <>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleEdit(index); }}
-                                                    className="px-4 py-1 text-sm font-semibold rounded-full border border-[#96161C] text-[#96161C]"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleDelete(index); }}
-                                                    className="px-4 py-1 text-sm font-semibold rounded-full border border-red-600 text-red-600"
-                                                >
-                                                    Delete
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <span className="text-gray-400 text-sm">No Actions</span>
-                                        )}
-                                    </td>
-                                </tr>
-                            </React.Fragment>
+                            <tr key={b.id} className="hover:bg-gray-50 transition cursor-pointer">
+                                <td className="px-6 py-4 font-medium text-gray-900">
+                                    {(() => {
+                                        const equipment = availableEquipments.find(eq => eq.id === b.equipment_type_id);
+                                        return equipment ? `${equipment.name} (${equipment.model_id})` : 'Unknown';
+                                    })()}
+                                </td>
+                                <td className="px-6 py-4">{getDepartmentName(b.affiliation_id)}</td>
+                                <td className="px-6 py-4">{getFacilityName(b.facility_id)}</td>
+                                <td className="px-6 py-4">{formatBookingDates(b.dates)}</td>
+                                <td className="px-6 py-4">{b.purpose}</td>
+                                <td className="px-6 py-4 flex gap-2">
+                                    {isAdmin ? (
+                                        <>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleEdit(index); }}
+                                                className="px-4 py-1 text-sm font-semibold rounded-full border border-[#96161C] text-[#96161C]"
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDelete(b.id); }}
+                                                className="px-4 py-1 text-sm font-semibold rounded-full border border-red-600 text-red-600"
+                                            >
+                                                Delete
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <span className="text-gray-400 text-sm">No Actions</span>
+                                    )}
+                                </td>
+                            </tr>
                         ))}
                     </tbody>
                 </table>
