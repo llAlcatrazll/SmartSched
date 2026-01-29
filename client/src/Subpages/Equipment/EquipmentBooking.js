@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 export default function EquipmentBooking() {
     const [showEquipmentForm, setShowEquipmentForm] = useState(false);
@@ -21,7 +23,9 @@ export default function EquipmentBooking() {
     const [editStatusId, setEditStatusId] = useState(null);
     const [editingBookingId, setEditingBookingId] = useState(null);
     const equipmentStatuses = ['Pending', 'Approved', 'Rejected', 'Returned'];
-    const [expandedRow, setExpandedRow] = useState(null);
+    const [showReceiptModal, setShowReceiptModal] = useState(false);
+    const [selectedBooking, setSelectedBooking] = useState(null);
+
     const isAdmin = true;
     useEffect(() => {
         if (!currentUserId) return;
@@ -340,7 +344,7 @@ export default function EquipmentBooking() {
             departmentId: booking.affiliation_id.toString(),
             facilityId: booking.facility_id.toString(),
             purpose: booking.purpose,
-            date: booking.dates[0],
+            date: booking.dates[0].split('T')[0],
             timeStart: booking.time_start?.slice(0, 5) || '',
             timeEnd: booking.time_end?.slice(0, 5) || ''
         });
@@ -386,6 +390,90 @@ export default function EquipmentBooking() {
             }));
         }
     }, [equipmentForm.timeStart]);
+    const downloadEquipmentReceipt = async (booking) => {
+        const receiptDiv = document.createElement("div");
+        receiptDiv.style.width = "800px";
+        receiptDiv.style.padding = "2rem";
+        receiptDiv.style.backgroundColor = "white";
+        receiptDiv.style.fontFamily = "Arial, sans-serif";
+
+        receiptDiv.innerHTML = `
+        <h1 style="color:#96161C; text-align:center;">Equipment Booking Receipt</h1>
+        <p style="text-align:center;">Generated on ${new Date().toLocaleDateString()}</p>
+
+        <h3 style="margin-top:2rem;">Booking Details</h3>
+        <table style="width:100%; border-collapse:collapse;">
+            <tr>
+                <th style="border:1px solid #333; padding:8px;">Equipment</th>
+                <td style="border:1px solid #333; padding:8px;">
+                    ${getEquipmentName(booking.equipment_type_id)}
+                </td>
+            </tr>
+            <tr>
+                <th style="border:1px solid #333; padding:8px;">Department</th>
+                <td style="border:1px solid #333; padding:8px;">
+                    ${getDepartmentName(booking.affiliation_id)}
+                </td>
+            </tr>
+            <tr>
+                <th style="border:1px solid #333; padding:8px;">Facility</th>
+                <td style="border:1px solid #333; padding:8px;">
+                    ${getFacilityName(booking.facility_id)}
+                </td>
+            </tr>
+            <tr>
+                <th style="border:1px solid #333; padding:8px;">Date(s)</th>
+                <td style="border:1px solid #333; padding:8px;">
+                    ${formatBookingDates(booking.dates)}
+                </td>
+            </tr>
+            <tr>
+                <th style="border:1px solid #333; padding:8px;">Time</th>
+                <td style="border:1px solid #333; padding:8px;">
+                    ${booking.time_start?.slice(0, 5)} - ${booking.time_end?.slice(0, 5)}
+                </td>
+            </tr>
+            <tr>
+                <th style="border:1px solid #333; padding:8px;">Purpose</th>
+                <td style="border:1px solid #333; padding:8px;">
+                    ${booking.purpose}
+                </td>
+            </tr>
+            <tr>
+                <th style="border:1px solid #333; padding:8px;">Status</th>
+                <td style="border:1px solid #333; padding:8px;">
+                    ${booking.status}
+                </td>
+            </tr>
+        </table>
+
+        <div style="display:flex; justify-content:space-between; margin-top:3rem;">
+            <div style="width:45%; text-align:center;">
+                <p>Requested By</p>
+                <div style="border-top:1px solid #333; margin-top:2rem;"></div>
+            </div>
+            <div style="width:45%; text-align:center;">
+                <p>Approved By</p>
+                <div style="border-top:1px solid #333; margin-top:2rem;"></div>
+            </div>
+        </div>
+    `;
+
+        document.body.appendChild(receiptDiv);
+
+        const canvas = await html2canvas(receiptDiv, { scale: 2 });
+        const imgData = canvas.toDataURL("image/png");
+
+        const pdf = new jsPDF("p", "pt", "a4");
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`EquipmentBooking_Receipt_${booking.id}.pdf`);
+
+        document.body.removeChild(receiptDiv);
+    };
+
     // ========================== RENDER ==========================
     return (
         <div>
@@ -578,7 +666,10 @@ export default function EquipmentBooking() {
                             const hasPivotAccess = userEquipmentIds.includes(bookingEquipmentId);
 
                             return (
-                                <tr key={b.id} className="hover:bg-gray-50 transition cursor-pointer">
+                                <tr key={b.id} className="hover:bg-gray-50 transition cursor-pointer" onClick={() => {
+                                    setSelectedBooking(b);
+                                    setShowReceiptModal(true);
+                                }}>
                                     <td className="px-6 py-4 font-medium text-gray-900">
                                         {(() => {
                                             const equipment = availableEquipments.find(eq => eq.id === b.equipment_type_id);
@@ -661,6 +752,40 @@ export default function EquipmentBooking() {
                     </tbody>
                 </table>
             </div>
+            {showReceiptModal && selectedBooking && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                    <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6 relative">
+                        <h2 className="text-xl font-bold text-[#96161C] mb-4">
+                            Equipment Booking Summary
+                        </h2>
+
+                        <div className="space-y-2 text-sm">
+                            <p><strong>Equipment:</strong> {getEquipmentName(selectedBooking.equipment_type_id)}</p>
+                            <p><strong>Department:</strong> {getDepartmentName(selectedBooking.affiliation_id)}</p>
+                            <p><strong>Facility:</strong> {getFacilityName(selectedBooking.facility_id)}</p>
+                            <p><strong>Date(s):</strong> {formatBookingDates(selectedBooking.dates)}</p>
+                            <p><strong>Time:</strong> {selectedBooking.time_start?.slice(0, 5)} - {selectedBooking.time_end?.slice(0, 5)}</p>
+                            <p><strong>Purpose:</strong> {selectedBooking.purpose}</p>
+                            <p><strong>Status:</strong> {selectedBooking.status}</p>
+                        </div>
+
+                        <div className="flex justify-end gap-3 mt-6">
+                            <button
+                                onClick={() => downloadEquipmentReceipt(selectedBooking)}
+                                className="px-6 py-2 rounded-lg bg-[#96161C] text-white"
+                            >
+                                Download Receipt
+                            </button>
+                            <button
+                                onClick={() => setShowReceiptModal(false)}
+                                className="px-6 py-2 rounded-lg bg-gray-200"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

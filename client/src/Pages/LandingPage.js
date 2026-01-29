@@ -25,6 +25,8 @@ import Drivers from '../Subpages/Drivers';
 // Equipment
 import EquipmentBooking from '../Subpages/Equipment/EquipmentBooking';
 import EquipmentCalendar from '../Subpages/Equipment/EquipmentCalendar';
+import EquipmentDashboard from '../Subpages/EquipmentDashboard';
+import UniversalCalendar from '../Subpages/UniversalCalendar';
 // ✅ Updated helper — now handles both facility & vehicle bookings
 async function sendCohereChatMessage(message, bookingsPayload = {}, currentDateTime) {
     try {
@@ -193,6 +195,8 @@ export default function LandingPage() {
         case 'manage-drivers': RenderedPage = <Drivers />; break;
         case 'equipment-calendar': RenderedPage = <EquipmentCalendar />; break;
         case 'equipment-booking': RenderedPage = <EquipmentBooking />; break;
+        case 'equipment-dashboard': RenderedPage = <EquipmentDashboard />; break;
+        case 'universal-calendar': RenderedPage = <UniversalCalendar />; break;
         default: RenderedPage = <Dashboard />;
     }
 
@@ -237,6 +241,12 @@ export default function LandingPage() {
                     )}
                     {showFacilityBreakdown && (
                         <SidebarItem icon={<Home size={20} />} label="Vehicle Dashboard" open={isSidebarOpen} onClick={() => handleSetActivePage('vehicle-dashboard')} />
+                    )}
+                    {showFacilityBreakdown && (
+                        <SidebarItem icon={<Home size={20} />} label="Equipment Dashboard" open={isSidebarOpen} onClick={() => handleSetActivePage('equipment-dashboard')} />
+                    )}
+                    {showFacilityBreakdown && (
+                        <SidebarItem icon={<Home size={20} />} label="Universal Calendar" open={isSidebarOpen} onClick={() => handleSetActivePage('universal-calendar')} />
                     )}
                     <SidebarItem icon={<User size={20} />} label="Profile" open={isSidebarOpen} onClick={() => handleSetActivePage('profile')} />
                     {/* Management Section (group label only, collapsible) */}
