@@ -214,11 +214,11 @@ app.use('/api/delete-equipment-booking', deleteEquipmentBookingRoute);
 
 const userVehiclesRoutes = require('./routes/booking/userVehicles');
 const userEquipmentsRoutes = require('./routes/booking/userEquipments');
+const availableEquipments = require('./routes/cruds/availableEquipments');
 
 app.use('/api', userVehiclesRoutes);
 app.use('/api', userEquipmentsRoutes);
-
-
+app.use('/api', availableEquipments);
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });

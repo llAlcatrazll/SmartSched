@@ -39,28 +39,34 @@ router.post('/', async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!equipments || !departmentId || !facilityId || !purpose || !mode || !timeStart || !timeEnd) {
-        return res.status(400).json({ success: false, message: 'Missing required fields' });
+    const missing = [];
+
+    if (!equipments?.length) missing.push('equipments');
+    if (!departmentId) missing.push('departmentId');
+    if (!facilityId) missing.push('facilityId');
+    if (!purpose) missing.push('purpose');
+    if (!timeStart) missing.push('timeStart');
+    if (!timeEnd) missing.push('timeEnd');
+
+    if (missing.length) {
+        return res.status(400).json({
+            success: false,
+            message: `Missing required fields: ${missing.join(', ')}`
+        });
     }
 
+
     // Validate and construct dates array based on mode
-    let datesArray = [];
-    if (mode === 'single' && date) {
-        datesArray.push(date);
-    } else if (mode === 'specific' && specificDates && specificDates.length > 0) {
-        datesArray = specificDates;
-    } else if (mode === 'range' && rangeStart && rangeEnd) {
-        const start = new Date(rangeStart);
-        const end = new Date(rangeEnd);
-        if (start > end) {
-            return res.status(400).json({ success: false, message: 'Invalid date range' });
-        }
-        for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
-            datesArray.push(d.toISOString().split('T')[0]);
-        }
-    } else {
-        return res.status(400).json({ success: false, message: 'Invalid date or mode' });
+    // ✅ Construct dates array (single-date booking)
+    if (!date) {
+        return res.status(400).json({
+            success: false,
+            message: 'Missing required field: date'
+        });
     }
+
+    const datesArray = [date];
+
 
     try {
         // Check conflicts for each equipment and date
@@ -97,10 +103,27 @@ router.post('/', async (req, res) => {
         for (const eq of equipments) {
             await pool.query(
                 `INSERT INTO "Equipment" (
-                    equipment_type_id, quantity, affiliation_id, facility_id, dates, purpose, time_start, time_end, created_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
-                [eq.equipmentId, eq.quantity, departmentId, facilityId, datesArray, purpose, timeStart, timeEnd]
+      equipment_type_id,
+      quantity,
+      affiliation_id,
+      facility_id,
+      dates,
+      purpose,
+      time_start,
+      time_end
+  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                [
+                    eq.equipmentId,
+                    eq.quantity ?? 1,
+                    departmentId,
+                    facilityId,
+                    datesArray,
+                    purpose,
+                    timeStart,
+                    timeEnd
+                ]
             );
+
         }
 
         res.json({

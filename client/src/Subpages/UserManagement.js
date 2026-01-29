@@ -115,7 +115,7 @@ export default function UserManagement() {
         if (type === 'vehicle') {
             // adjust these if your vehicle schema differs
             return (
-                item.vehicle_type ||
+                item.vehicle_name ||
                 item.vehicleType ||
                 item.type ||
                 item.name ||
@@ -134,7 +134,7 @@ export default function UserManagement() {
         if (type === 'facility') return `${item.name ?? ''} ${item.id ?? ''}`;
 
         if (type === 'vehicle') {
-            return `${item.vehicle_type ?? ''} ${item.vehicleType ?? ''} ${item.type ?? ''} ${item.id ?? ''} ${item.name ?? ''}`;
+            return `${item.vehicle_name ?? ''} ${item.vehicleType ?? ''} ${item.type ?? ''} ${item.id ?? ''} ${item.name ?? ''}`;
         }
 
         // equipment

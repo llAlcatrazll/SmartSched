@@ -11,7 +11,8 @@ export default function EquipmentBooking() {
         timeStart: '',
         timeEnd: ''
     });
-
+    const currentUserId = localStorage.getItem("currentUserId");
+    const [userEquipmentIds, setUserEquipmentIds] = useState([]);
     const [availableEquipments, setAvailableEquipments] = useState([]);
     const [filteredEquipments, setFilteredEquipments] = useState([]);
     const [facilities, setFacilities] = useState([]);
@@ -20,6 +21,82 @@ export default function EquipmentBooking() {
 
     const [expandedRow, setExpandedRow] = useState(null);
     const isAdmin = true;
+    // useEffect(() => {
+    //     if (!currentUserId) return;
+
+    //     const fetchUserEquipments = async () => {
+    //         const res = await fetch(
+    //             `http://localhost:5000/api/user-equipments-fetch/${currentUserId}`
+    //         );
+    //         const data = await res.json();
+    //         setUserEquipmentIds((data.equipments || []).map(Number));
+    //     };
+
+    //     fetchUserEquipments();
+    // }, [currentUserId]);
+    useEffect(() => {
+        const { date, timeStart, timeEnd, facilityId } = equipmentForm;
+
+        if (!date || !timeStart || !timeEnd || !facilityId) {
+            setFilteredEquipments([]);
+            return;
+        }
+
+        const fetchAvailableEquipments = async () => {
+            const params = new URLSearchParams({
+                date,
+                timeStart,
+                timeEnd,
+                facilityId
+            });
+
+            const res = await fetch(
+                `http://localhost:5000/api/available-equipments?${params}`
+            );
+
+            const data = await res.json();
+            if (data.success) {
+                setFilteredEquipments(data.equipments);
+            }
+        };
+
+        fetchAvailableEquipments();
+    }, [
+        equipmentForm.date,
+        equipmentForm.timeStart,
+        equipmentForm.timeEnd,
+        equipmentForm.facilityId
+    ]);
+
+    useEffect(() => {
+        if (!bookings.length || !currentUserId) return;
+
+        console.group("EQUIPMENT BOOKINGS — PIVOT CHECK");
+        console.log("User ID:", currentUserId);
+        console.log("Equipments in Pivot:", userEquipmentIds);
+        console.log("--------------------------------");
+
+        bookings.forEach((booking, index) => {
+            const bookingEquipmentId = Number(booking.equipment_type_id);
+            const inPivot = userEquipmentIds.includes(bookingEquipmentId);
+
+            console.group(`Booking #${index + 1}`);
+            console.log("Booking Equipment ID:", bookingEquipmentId);
+
+            if (!inPivot) {
+                console.warn("Pivot Status: ❌ NOT IN PIVOT");
+                console.log("Equipments in Pivot for this User:", userEquipmentIds);
+            } else {
+                console.log("Pivot Status: ✅ IN PIVOT");
+            }
+
+            console.groupEnd();
+        });
+
+        console.log("--------------------------------");
+        console.groupEnd();
+    }, [bookings, currentUserId, userEquipmentIds]);
+
 
     // ========================== FETCH DATA ==========================
     useEffect(() => {
@@ -116,22 +193,40 @@ export default function EquipmentBooking() {
             return;
         }
 
+        // ✅ Build payload FIRST
+        const payload = {
+            equipments: equipmentForm.equipments.map(id => ({
+                equipmentId: Number(id),
+                quantity: 1
+            })),
+            departmentId: equipmentForm.departmentId,
+            facilityId: equipmentForm.facilityId,
+            purpose: equipmentForm.purpose,
+            date: equipmentForm.date,
+            timeStart: equipmentForm.timeStart, // must be HH:mm
+            timeEnd: equipmentForm.timeEnd      // must be HH:mm
+        };
+
         try {
             const res = await fetch('http://localhost:5000/api/create-equipment-booking', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(equipmentForm)
+                body: JSON.stringify(payload)
             });
 
             const data = await res.json();
+
             if (data.success) {
                 alert('Booking created!');
 
-                // refresh bookings after create
+                // 🔄 refresh bookings
                 const bookRes = await fetch('http://localhost:5000/api/fetch-equipment-bookings');
                 const bookingsData = await bookRes.json();
-                if (bookingsData.success) setBookings(bookingsData.bookings);
+                if (bookingsData.success) {
+                    setBookings(bookingsData.bookings);
+                }
 
+                // ♻️ reset form
                 setEquipmentForm({
                     equipments: [''],
                     facilityId: '',
@@ -149,6 +244,7 @@ export default function EquipmentBooking() {
             alert('Error creating booking');
         }
     };
+
 
     // ========================== HELPERS ==========================
     const getEquipmentName = (id) => availableEquipments.find(eq => eq.id === id)?.name || 'Unknown';
@@ -318,8 +414,6 @@ export default function EquipmentBooking() {
                                     type="time"
                                     value={equipmentForm.timeStart}
                                     onChange={e => setEquipmentForm({ ...equipmentForm, timeStart: e.target.value })}
-                                    className="w-full border rounded-lg px-4 py-2"
-                                    required
                                 />
                             </div>
 
@@ -329,8 +423,6 @@ export default function EquipmentBooking() {
                                     type="time"
                                     value={equipmentForm.timeEnd}
                                     onChange={e => setEquipmentForm({ ...equipmentForm, timeEnd: e.target.value })}
-                                    className="w-full border rounded-lg px-4 py-2"
-                                    required
                                 />
                             </div>
 
@@ -385,45 +477,80 @@ export default function EquipmentBooking() {
                             <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Department</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Facility</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Date(s)</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Time</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Purpose</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">
+                                Status
+                            </th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase rounded-tr-xl">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
-                        {bookings.map((b, index) => (
-                            <tr key={b.id} className="hover:bg-gray-50 transition cursor-pointer">
-                                <td className="px-6 py-4 font-medium text-gray-900">
-                                    {(() => {
-                                        const equipment = availableEquipments.find(eq => eq.id === b.equipment_type_id);
-                                        return equipment ? `${equipment.name} (${equipment.model_id})` : 'Unknown';
-                                    })()}
-                                </td>
-                                <td className="px-6 py-4">{getDepartmentName(b.affiliation_id)}</td>
-                                <td className="px-6 py-4">{getFacilityName(b.facility_id)}</td>
-                                <td className="px-6 py-4">{formatBookingDates(b.dates)}</td>
-                                <td className="px-6 py-4">{b.purpose}</td>
-                                <td className="px-6 py-4 flex gap-2">
-                                    {isAdmin ? (
-                                        <>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleEdit(index); }}
-                                                className="px-4 py-1 text-sm font-semibold rounded-full border border-[#96161C] text-[#96161C]"
+                        {bookings.map((b, index) => {
+                            const bookingEquipmentId = Number(b.equipment_type_id);
+                            const hasPivotAccess = userEquipmentIds.includes(bookingEquipmentId);
+
+                            return (
+                                <tr key={b.id} className="hover:bg-gray-50 transition cursor-pointer">
+                                    <td className="px-6 py-4 font-medium text-gray-900">
+                                        {(() => {
+                                            const equipment = availableEquipments.find(eq => eq.id === b.equipment_type_id);
+                                            return equipment ? `${equipment.name} (${equipment.model_id})` : 'Unknown';
+                                        })()}
+                                    </td>
+                                    <td className="px-6 py-4">{getDepartmentName(b.affiliation_id)}</td>
+                                    <td className="px-6 py-4">{getFacilityName(b.facility_id)}</td>
+                                    <td className="px-6 py-4">{formatBookingDates(b.dates)}</td>
+                                    <td className="px-6 py-4">
+                                        {b.time_start && b.time_end
+                                            ? `${b.time_start.slice(0, 5)} - ${b.time_end.slice(0, 5)}`
+                                            : '—'}
+                                    </td>
+                                    <td className="px-6 py-4">{b.purpose}</td>
+                                    <td className="px-6 py-4">
+                                        {!hasPivotAccess ? (
+                                            <span className="text-gray-400 italic">No Access</span>
+                                        ) : (
+                                            <span
+                                                className={`px-3 py-1 rounded-full text-xs font-bold
+            ${b.status === 'Approved'
+                                                        ? 'bg-green-100 text-green-700 border border-green-300'
+                                                        : b.status === 'Rejected'
+                                                            ? 'bg-red-100 text-red-700 border border-red-300'
+                                                            : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                                                    }`}
                                             >
-                                                Edit
-                                            </button>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleDelete(b.id); }}
-                                                className="px-4 py-1 text-sm font-semibold rounded-full border border-red-600 text-red-600"
-                                            >
-                                                Delete
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <span className="text-gray-400 text-sm">No Actions</span>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
+                                                {b.status}
+                                            </span>
+                                        )}
+                                    </td>
+
+                                    <td className="px-6 py-4 flex gap-2">
+                                        {!hasPivotAccess ? (
+                                            <span className="text-gray-400 italic">No Access</span>
+                                        ) : isAdmin ? (
+                                            <>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleEdit(index); }}
+                                                    className="px-4 py-1 text-sm font-semibold rounded-full border border-[#96161C] text-[#96161C]"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(b.id); }}
+                                                    className="px-4 py-1 text-sm font-semibold rounded-full border border-red-600 text-red-600"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <span className="text-gray-400 text-sm">No Actions</span>
+                                        )}
+                                    </td>
+
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
