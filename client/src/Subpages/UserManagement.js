@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Trash, Edit, Users, Building, Truck, Cable } from 'lucide-react';
+import { Trash, Edit, Users, Building, Truck, Cable, LayoutList } from 'lucide-react';
 
 export default function UserManagement() {
     const [users, setUsers] = useState([]);
@@ -33,6 +33,33 @@ export default function UserManagement() {
     const [savingEquipment, setSavingEquipment] = useState(false);
 
     const [selectedUser, setSelectedUser] = useState(null);
+    const [showSidebarModal, setShowSidebarModal] = useState(false);
+    const [selectedSidebarItems, setSelectedSidebarItems] = useState([]);
+    const [originalSelectedSidebarItems, setOriginalSelectedSidebarItems] = useState([]);
+    const [hasSidebarChanges, setHasSidebarChanges] = useState(false);
+    const [savingSidebar, setSavingSidebar] = useState(false);
+    const SIDEBAR_ITEMS = [
+        { key: 'facility-dashboard', label: 'Facility Dashboard' },
+        { key: 'vehicle-dashboard', label: 'Vehicle Dashboard' },
+        { key: 'equipment-dashboard', label: 'Equipment Dashboard' },
+        { key: 'universal-calendar', label: 'Universal Calendar' },
+
+        { key: 'calendar', label: 'Facility Calendar' },
+        { key: 'booking', label: 'Facility Booking' },
+
+        { key: 'vehicle-calendar', label: 'Vehicle Calendar' },
+        { key: 'vehicle-booking', label: 'Vehicle Booking' },
+
+        { key: 'equipment-calendar', label: 'Equipment Calendar' },
+        { key: 'equipment-booking', label: 'Equipment Booking' },
+
+        { key: 'user-management', label: 'User Management' },
+        { key: 'manage-affiliation', label: 'Affiliations' },
+        { key: 'manage-department', label: 'Facilities' },
+        { key: 'manage-vehicles', label: 'Vehicles' },
+        { key: 'manage-allequipment', label: 'Equipments' },
+        { key: 'manage-drivers', label: 'Drivers' },
+    ];
 
     // Form
     const [form, setForm] = useState({
@@ -180,6 +207,20 @@ export default function UserManagement() {
         });
         setEditingId(user.id);
     };
+    const toggleSidebarItem = (key) => {
+        setSelectedSidebarItems((prev) => {
+            const updated = prev.includes(key)
+                ? prev.filter((k) => k !== key)
+                : [...prev, key];
+
+            setHasSidebarChanges(
+                updated.sort().join(',') !==
+                originalSelectedSidebarItems.sort().join(',')
+            );
+
+            return updated;
+        });
+    };
 
     const handleDelete = async (id) => {
         if (!window.confirm('Delete this user?')) return;
@@ -253,6 +294,25 @@ export default function UserManagement() {
                 console.error(err);
             }
         }
+        if (type === 'sidebar') {
+            setSelectedUser(user);
+            setHasSidebarChanges(false);
+            setSelectedSidebarItems([]);
+            setOriginalSelectedSidebarItems([]);
+            setShowSidebarModal(true);
+
+            try {
+                const res = await fetch(`http://localhost:5000/api/user-sidebar-fetch/${user.id}`);
+                const data = await res.json();
+                if (data.success) {
+                    setSelectedSidebarItems(data.items || []);
+                    setOriginalSelectedSidebarItems(data.items || []);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
     };
 
     const toggleItem = (id, type) => {
@@ -308,6 +368,41 @@ export default function UserManagement() {
     const saveModal = async (type) => {
         if (!selectedUser) return;
 
+        // ===================== SIDEBAR (EXIT EARLY) =====================
+        if (type === 'sidebar') {
+            setSavingSidebar(true);
+
+            try {
+                const res = await fetch('http://localhost:5000/api/user-sidebar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: String(selectedUser.id),
+                        items: selectedSidebarItems
+                    }),
+                });
+
+                const data = await res.json();
+
+                if (!res.ok || !data.success) {
+                    alert(data.message || 'Failed to save sidebar permissions');
+                    return;
+                }
+
+                setOriginalSelectedSidebarItems(selectedSidebarItems);
+                setHasSidebarChanges(false);
+                setShowSidebarModal(false);
+            } catch (err) {
+                console.error(err);
+                alert('Failed to save sidebar permissions');
+            } finally {
+                setSavingSidebar(false);
+            }
+
+            return; // ⛔ CRITICAL: stop here
+        }
+
+        // ===================== EXISTING LOGIC =====================
         if (type === 'facility') setSavingFacilities(true);
         if (type === 'vehicle') setSavingVehicles(true);
         if (type === 'equipment') setSavingEquipment(true);
@@ -360,6 +455,7 @@ export default function UserManagement() {
                 setHasEquipmentChanges(false);
                 setShowEquipmentModal(false);
             }
+
         } catch (err) {
             console.error(err);
             alert('Failed to save. Check server logs.');
@@ -369,6 +465,7 @@ export default function UserManagement() {
             if (type === 'equipment') setSavingEquipment(false);
         }
     };
+
 
     const filteredItems = (type) => {
         const q =
@@ -496,6 +593,13 @@ export default function UserManagement() {
 
                                 <td className="px-4 py-2 flex justify-end gap-3">
                                     <button
+                                        onClick={() => openModal(user, 'sidebar')}
+                                        className="text-indigo-700 hover:text-indigo-900"
+                                        title="Manage Sidebar Access"
+                                    >
+                                        <LayoutList size={18} />
+                                    </button>
+                                    <button
                                         onClick={() => openModal(user, 'facility')}
                                         className="text-green-700 hover:text-green-900"
                                         title="Manage Facilities"
@@ -549,11 +653,99 @@ export default function UserManagement() {
             {showFacilitiesModal && renderModal('facility')}
             {showVehiclesModal && renderModal('vehicle')}
             {showEquipmentModal && renderModal('equipment')}
+            {showSidebarModal && renderModal('sidebar')}
         </div>
     );
 
     // ========================= MODAL RENDER =========================
     function renderModal(type) {
+        if (type === 'sidebar') {
+            return (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-lg p-6">
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                            <div>
+                                <h3 className="text-xl font-bold text-[#96161C]">
+                                    Sidebar Items
+                                </h3>
+                                <p className="text-sm text-gray-600">
+                                    User: <span className="font-semibold">{selectedUser?.name}</span>
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowSidebarModal(false)}
+                                className="text-gray-500 hover:text-black text-2xl leading-none"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="max-h-[340px] overflow-y-auto border rounded-xl p-3 space-y-2">
+                            {SIDEBAR_ITEMS.map((item) => (
+                                <label
+                                    key={item.key}
+                                    className="flex items-center justify-between gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer border border-transparent hover:border-gray-200 transition"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedSidebarItems.includes(item.key)}
+                                            onChange={() => toggleSidebarItem(item.key)}
+                                            className="w-4 h-4"
+                                        />
+                                        <div>
+                                            <div className="font-semibold text-gray-900">
+                                                {item.label}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                Key: {item.key}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </label>
+                            ))}
+                        </div>
+
+                        <div className="flex items-center justify-between mt-5">
+                            <div className="text-xs text-gray-500">
+                                {hasSidebarChanges ? 'Unsaved changes' : 'No changes'}
+                            </div>
+
+                            <div className="flex gap-2">
+                                {hasSidebarChanges ? (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedSidebarItems(originalSelectedSidebarItems);
+                                                setHasSidebarChanges(false);
+                                            }}
+                                            className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 transition"
+                                        >
+                                            Cancel
+                                        </button>
+
+                                        <button
+                                            onClick={() => saveModal('sidebar')}
+                                            className="px-5 py-2 rounded-xl bg-[#96161C] text-white hover:bg-[#7a1217] transition"
+                                            disabled={savingSidebar}
+                                        >
+                                            {savingSidebar ? 'Saving...' : 'Save'}
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowSidebarModal(false)}
+                                        className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 transition"
+                                    >
+                                        Close
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
         const items = filteredItems(type);
 
         const selected =
@@ -584,58 +776,90 @@ export default function UserManagement() {
                     <div className="flex items-start justify-between gap-4 mb-4">
                         <div>
                             <h3 className="text-xl font-bold text-[#96161C]">
-                                {type.charAt(0).toUpperCase() + type.slice(1)}s
+                                {type === 'sidebar'
+                                    ? 'Sidebar Items'
+                                    : `${type.charAt(0).toUpperCase() + type.slice(1)}s`}
                             </h3>
                             <p className="text-sm text-gray-600">
                                 User: <span className="font-semibold">{selectedUser?.name}</span>
                             </p>
                         </div>
-                        <button onClick={close} className="text-gray-500 hover:text-black text-2xl leading-none">
+                        <button
+                            onClick={close}
+                            className="text-gray-500 hover:text-black text-2xl leading-none"
+                        >
                             ✕
                         </button>
                     </div>
 
-                    <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between mb-4">
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder={`Search ${type}...`}
-                            className="w-full md:w-2/3 border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]/40"
-                        />
-                        <div className="text-sm text-gray-600">
-                            Selected: <span className="font-bold">{selected.length}</span>
+                    {type !== 'sidebar' && (
+                        <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between mb-4">
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder={`Search ${type}...`}
+                                className="w-full md:w-2/3 border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#96161C]/40"
+                            />
+                            <div className="text-sm text-gray-600">
+                                Selected: <span className="font-bold">{selected.length}</span>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <div className="max-h-[340px] overflow-y-auto border rounded-xl p-3 space-y-2">
                         {items.length === 0 ? (
-                            <p className="text-gray-500 text-sm">No {type}s found.</p>
+                            <p className="text-gray-500 text-sm">No items found.</p>
                         ) : (
-                            items.map((item) => (
-                                <label
-                                    key={item.id}
-                                    className="flex items-center justify-between gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer border border-transparent hover:border-gray-200 transition"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <input
-                                            type="checkbox"
-                                            checked={selected.includes(Number(item.id))}
-                                            onChange={() => toggleItem(Number(item.id), type)}
-                                            className="w-4 h-4"
-                                        />
-                                        <div>
-                                            <div className="font-semibold text-gray-900">{getItemLabel(item, type)}</div>
-                                            <div className="text-xs text-gray-500">ID: {item.id}</div>
+                            items.map((item) => {
+                                const id = type === 'sidebar' ? item.key : Number(item.id);
+                                const label =
+                                    type === 'sidebar'
+                                        ? item.label
+                                        : getItemLabel(item, type);
+
+                                const checked =
+                                    type === 'sidebar'
+                                        ? selected.includes(item.key)
+                                        : selected.includes(Number(item.id));
+
+                                return (
+                                    <label
+                                        key={id}
+                                        className="flex items-center justify-between gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer border border-transparent hover:border-gray-200 transition"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="checkbox"
+                                                checked={checked}
+                                                onChange={() =>
+                                                    type === 'sidebar'
+                                                        ? toggleSidebarItem(item.key)
+                                                        : toggleItem(Number(item.id), type)
+                                                }
+                                                className="w-4 h-4"
+                                            />
+                                            <div>
+                                                <div className="font-semibold text-gray-900">
+                                                    {label}
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    {type === 'sidebar'
+                                                        ? `Key: ${item.key}`
+                                                        : `ID: ${item.id}`}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </label>
-                            ))
+                                    </label>
+                                );
+                            })
                         )}
                     </div>
 
                     <div className="flex items-center justify-between mt-5">
-                        <div className="text-xs text-gray-500">{hasChanges ? 'Unsaved changes' : 'No changes'}</div>
+                        <div className="text-xs text-gray-500">
+                            {hasChanges ? 'Unsaved changes' : 'No changes'}
+                        </div>
 
                         <div className="flex gap-2">
                             {hasChanges ? (
@@ -657,7 +881,10 @@ export default function UserManagement() {
                                     </button>
                                 </>
                             ) : (
-                                <button onClick={close} className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 transition">
+                                <button
+                                    onClick={close}
+                                    className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 transition"
+                                >
                                     Close
                                 </button>
                             )}

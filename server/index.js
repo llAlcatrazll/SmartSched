@@ -227,9 +227,12 @@ const updateEquipmentBooking = require('./routes/cruds/updateEquipmentBooking');
 app.use('/api/update-equipment-booking', updateEquipmentBooking);
 
 
-
-
-
+const fetchUserSidebar = require('./routes/cruds/userSidebarFetch');
+app.use('/api/user-sidebar-fetch', fetchUserSidebar);
+const userSidebar = require('./routes/cruds/userSidebar');
+app.use('/api/user-sidebar', userSidebar);
+// const fetchUserSidebar = require('./routes/cruds/fetchUserSidebar');
+// app.use('/api/user-sidebar-fetch', fetchUserSidebar);
 // 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
