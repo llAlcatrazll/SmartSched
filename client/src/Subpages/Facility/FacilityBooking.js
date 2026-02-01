@@ -138,57 +138,119 @@ export default function Booking() {
     const [schedules, setSchedules] = useState([
         { date: '' || null, startTime: '' || null, endTime: '' || null }
     ]);
+    // ===== Helpers (keep as-is) =====
+    const getFacilityName = (booking, facilityMap) =>
+        facilityMap?.[String(booking.event_facility)] || 'Unknown Facility';
 
+    const getOrganizationName = (booking, affiliations) =>
+        affiliations.find(a => a.id === Number(booking.organization))
+            ?.abbreviation || 'Unknown Organization';
+
+    const formatDisplayDate = (date) =>
+        date
+            ? new Date(date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+            })
+            : '';
+
+    const formatDisplayTime = (start, end, formatTime) =>
+        start && end ? `${formatTime(start)} – ${formatTime(end)}` : '';
+
+
+    // ===== DOWNLOAD RECEIPT =====
     const downloadReceipt = () => {
         if (!booking) return;
 
         const doc = new jsPDF("p", "mm", "a4");
-        const left = 15; // left margin
-        let y = 20; // starting vertical position
+        const left = 15;
+        let y = 20;
 
+        // Title
         doc.setFontSize(18);
         doc.text("Facility & Vehicle Booking Receipt", 105, y, { align: "center" });
-        y += 10;
+        y += 12;
 
         doc.setFontSize(12);
-        doc.text(`Event: ${booking.event_name || booking.title}`, left, y);
-        y += 8;
-        doc.text(`Facility: ${booking.event_facility || booking.facility}`, left, y);
-        y += 8;
-        doc.text(`Organization: ${booking.organization || booking.org}`, left, y);
-        y += 8;
-        doc.text(`Requested By: ${booking.requested_by || booking.requestedBy}`, left, y);
-        y += 8;
-        doc.text(`Contact: ${booking.contact}`, left, y);
-        y += 8;
-        doc.text(`Date: ${booking.event_date || booking.date}`, left, y);
-        y += 8;
-        doc.text(`Time: ${booking.starting_time || booking.start} – ${booking.ending_time || booking.end}`, left, y);
-        y += 15;
 
-        // Vehicles
-        if (vehicles.length > 0) {
+        // Booking Details
+        doc.text(`Event: ${booking.event_name || booking.title || '—'}`, left, y);
+        y += 8;
+
+        doc.text(
+            `Facility: ${getFacilityName(booking, facilityMap)}`,
+            left,
+            y
+        );
+        y += 8;
+
+        doc.text(
+            `Organization: ${getOrganizationName(booking, affiliations)}`,
+            left,
+            y
+        );
+        y += 8;
+
+        doc.text(
+            `Requested By: ${booking.requested_by || booking.requestedBy || '—'}`,
+            left,
+            y
+        );
+        y += 8;
+
+        doc.text(`Contact: ${booking.contact || '—'}`, left, y);
+        y += 8;
+
+        doc.text(
+            `Date: ${formatDisplayDate(booking.event_date || booking.date)}`,
+            left,
+            y
+        );
+        y += 8;
+
+        doc.text(
+            `Time: ${formatDisplayTime(
+                booking.starting_time || booking.start,
+                booking.ending_time || booking.end,
+                formatTime
+            )}`,
+            left,
+            y
+        );
+        y += 12;
+
+        // Vehicle section (optional)
+        if (Array.isArray(vehicles) && vehicles.length > 0) {
             doc.setFontSize(14);
             doc.text("Vehicle Reservations:", left, y);
             y += 8;
+
             doc.setFontSize(12);
             vehicles.forEach((v, idx) => {
-                doc.text(`${idx + 1}. ${v.vehicle_type || "Unknown"} - ${v.plate_number || "N/A"}`, left + 5, y);
+                doc.text(
+                    `${idx + 1}. ${v.vehicle_type || 'Unknown Vehicle'} – ${v.plate_number || 'N/A'}`,
+                    left + 5,
+                    y
+                );
                 y += 7;
             });
+
             y += 5;
         }
 
-
+        // Signatures
         y += 10;
         doc.text("__________________________", left, y);
         doc.text("Requested By", left, y + 6);
+
         doc.text("__________________________", 130, y);
         doc.text("Approved By (President)", 130, y + 6);
 
-        // Save PDF
+        // Save
         doc.save(`${booking.event_name || "booking"}-receipt.pdf`);
     };
+
 
     const booking = selectedBooking ?? null;
     const bookingId = booking?.id ?? null;
@@ -867,12 +929,11 @@ export default function Booking() {
     };
 
 
-    function getTomorrowDate() {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        return tomorrow.toISOString().split('T')[0];
-    }
-
+    const getTomorrowDate = () => {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        return d.toISOString().split('T')[0];
+    };
     function calculateMinEndTime(startTime) {
         if (!startTime) return "06:00";
 
@@ -1817,7 +1878,7 @@ export default function Booking() {
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-10">
                                                 <InfoItem icon={<Building />} label="Facility"
-                                                    value={booking.event_facility || booking.facility} />
+                                                    value={facilityMap[String(selectedBooking.event_facility)] || 'Unknown Facility'} />
 
                                                 <InfoItem icon={<Calendar />} label="Date"
                                                     value={booking.event_date || booking.date} />
@@ -1829,7 +1890,8 @@ export default function Booking() {
                                                     value={booking.requested_by} />
 
                                                 <InfoItem icon={<Users />} label="Organization"
-                                                    value={booking.organization || booking.org} />
+                                                    value={affiliations.find(a => a.id === Number(selectedBooking.organization))
+                                                        ?.abbreviation || 'Unknown Organization'} />
 
                                                 <InfoItem icon={<Phone />} label="Contact"
                                                     value={booking.contact} />
@@ -1862,10 +1924,10 @@ export default function Booking() {
                                         </section>
 
                                         {/* RIGHT — VEHICLES + ACTIONS */}
-                                        <section className="flex flex-col gap-10">
+                                        {/* <section className="flex flex-col gap-10"> */}
 
-                                            {/* Vehicles */}
-                                            <div className="mt-8">
+                                        {/* Vehicles */}
+                                        {/* <div className="mt-8">
                                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Vehicles</h3>
 
                                                 <div className="mt-6">
@@ -1882,21 +1944,20 @@ export default function Booking() {
                                                         <p className="text-gray-500 italic">No vehicles booked for this event</p>
                                                     )}
 
-                                                    {/* LOG IN ALL CAPS */}
                                                     {selectedBooking?.matchedVehicles?.length > 0 && console.log(
                                                         `MATCH FOUND FOR BOOKING: ${selectedBooking.event_name.toUpperCase()} ON ${(selectedBooking.event_date || selectedBooking.date).split('T')[0]}`
                                                     )}
                                                 </div>
-                                            </div>
+                                            </div> */}
 
 
 
 
 
-                                            {/* Actions */}
+                                        {/* Actions */}
 
 
-                                        </section>
+                                        {/* </section> */}
                                     </div>
 
                                     {/* Footer */}
