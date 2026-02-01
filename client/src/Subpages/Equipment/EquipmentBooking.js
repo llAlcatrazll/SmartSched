@@ -5,14 +5,19 @@ import html2canvas from "html2canvas";
 export default function EquipmentBooking() {
     const [showEquipmentForm, setShowEquipmentForm] = useState(false);
     const [equipmentForm, setEquipmentForm] = useState({
-        equipments: [''], // store equipmentId strings
+        equipments: [''],
         facilityId: '',
         departmentId: '',
         purpose: '',
-        date: '',
+        mode: 'single',          // 👈 NEW
+        date: '',                // single
+        specificDates: ['', '', '', ''], // specific (max 4)
+        rangeStart: '',          // range
+        rangeEnd: '',
         timeStart: '',
         timeEnd: ''
     });
+
     const currentUserId = localStorage.getItem("currentUserId");
     const [userEquipmentIds, setUserEquipmentIds] = useState([]);
     const [availableEquipments, setAvailableEquipments] = useState([]);
@@ -36,6 +41,30 @@ export default function EquipmentBooking() {
     const handleFilterChange = (e) => {
         setFilter({ ...filter, [e.target.name]: e.target.value });
     };
+    const buildDatesArray = () => {
+        let dates = [];
+
+        if (equipmentForm.mode === 'single') {
+            if (equipmentForm.date) dates = [equipmentForm.date];
+        }
+
+        if (equipmentForm.mode === 'specific') {
+            dates = equipmentForm.specificDates.filter(Boolean);
+        }
+
+        if (equipmentForm.mode === 'range') {
+            if (!equipmentForm.rangeStart || !equipmentForm.rangeEnd) return [];
+            const start = new Date(equipmentForm.rangeStart);
+            const end = new Date(equipmentForm.rangeEnd);
+
+            for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
+                dates.push(d.toISOString().split('T')[0]);
+            }
+        }
+
+        return dates;
+    };
+
 
     const isAdmin = true;
     useEffect(() => {
@@ -52,23 +81,27 @@ export default function EquipmentBooking() {
         fetchUserEquipments();
     }, [currentUserId]);
     useEffect(() => {
-        const { date, timeStart, timeEnd, facilityId } = equipmentForm;
+        const datesArray = buildDatesArray();
+        const { timeStart, timeEnd, facilityId } = equipmentForm;
 
-        if (!date || !timeStart || !timeEnd || !facilityId) {
+        if (!datesArray.length || !timeStart || !timeEnd || !facilityId) {
             setFilteredEquipments([]);
             return;
         }
 
         const fetchAvailableEquipments = async () => {
-            const params = new URLSearchParams({
-                date,
-                timeStart,
-                timeEnd,
-                facilityId
-            });
-
             const res = await fetch(
-                `http://localhost:5000/api/available-equipments?${params}`
+                'http://localhost:5000/api/available-equipments',
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        dates: datesArray,
+                        timeStart,
+                        timeEnd,
+                        facilityId
+                    })
+                }
             );
 
             const data = await res.json();
@@ -79,11 +112,16 @@ export default function EquipmentBooking() {
 
         fetchAvailableEquipments();
     }, [
+        equipmentForm.mode,
         equipmentForm.date,
+        equipmentForm.specificDates,
+        equipmentForm.rangeStart,
+        equipmentForm.rangeEnd,
         equipmentForm.timeStart,
         equipmentForm.timeEnd,
         equipmentForm.facilityId
     ]);
+
     const handleEquipmentStatusChange = async (bookingId, newStatus) => {
         try {
             const res = await fetch(
@@ -210,9 +248,35 @@ export default function EquipmentBooking() {
             alert('End time cannot be earlier than start time');
             return;
         }
-        if (!equipmentForm.date || !equipmentForm.timeStart || !equipmentForm.timeEnd) {
-            alert("Please select date and time first.");
-            return;
+        // if (!equipmentForm.date || !equipmentForm.timeStart || !equipmentForm.timeEnd) {
+        //     alert("Please select date and time first.");
+        //     return;
+        // }
+
+        let datesArray = [];
+
+        if (equipmentForm.mode === 'single') {
+            if (!equipmentForm.date) return alert('Please select a date');
+            datesArray = [equipmentForm.date];
+        }
+
+        if (equipmentForm.mode === 'specific') {
+            datesArray = equipmentForm.specificDates.filter(Boolean);
+            if (!datesArray.length) return alert('Select at least one date');
+        }
+
+        if (equipmentForm.mode === 'range') {
+            const start = new Date(equipmentForm.rangeStart);
+            const end = new Date(equipmentForm.rangeEnd);
+
+            if (!start || !end) return alert('Select range dates');
+
+            const diffDays = (end - start) / (1000 * 60 * 60 * 24);
+            if (diffDays > 6) return alert('Date range cannot exceed 1 week');
+
+            for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
+                datesArray.push(d.toISOString().split('T')[0]);
+            }
         }
 
         const payload = {
@@ -223,10 +287,12 @@ export default function EquipmentBooking() {
             departmentId: equipmentForm.departmentId,
             facilityId: equipmentForm.facilityId,
             purpose: equipmentForm.purpose,
-            date: equipmentForm.date,
+            mode: equipmentForm.mode,
+            dates: datesArray,              // 👈 IMPORTANT
             timeStart: equipmentForm.timeStart,
             timeEnd: equipmentForm.timeEnd
         };
+
 
         const isEditing = Boolean(editingBookingId);
         const url = isEditing
@@ -487,7 +553,22 @@ export default function EquipmentBooking() {
                                                 onChange={e => handleEquipmentChange(e.target.value, index)}
                                                 className="w-full border rounded-lg px-4 py-2"
                                                 required
-                                                disabled={!equipmentForm.date || !equipmentForm.timeStart || !equipmentForm.timeEnd}
+                                                disabled={
+                                                    !equipmentForm.timeStart ||
+                                                    !equipmentForm.timeEnd ||
+                                                    (
+                                                        equipmentForm.mode === 'single' && !equipmentForm.date
+                                                    ) ||
+                                                    (
+                                                        equipmentForm.mode === 'specific' &&
+                                                        !equipmentForm.specificDates.some(Boolean)
+                                                    ) ||
+                                                    (
+                                                        equipmentForm.mode === 'range' &&
+                                                        (!equipmentForm.rangeStart || !equipmentForm.rangeEnd)
+                                                    )
+                                                }
+
                                             >
                                                 <option value="">
                                                     {!equipmentForm.date || !equipmentForm.timeStart || !equipmentForm.timeEnd
@@ -575,7 +656,7 @@ export default function EquipmentBooking() {
                                 />
                             </div>
 
-                            <div>
+                            {/* <div>
                                 <label className="block text-sm font-medium mb-1">Date*</label>
                                 <input
                                     type="date"
@@ -585,7 +666,77 @@ export default function EquipmentBooking() {
                                         setEquipmentForm({ ...equipmentForm, date: e.target.value })
                                     }
                                 />
+                            </div> */}
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Date Mode*</label>
+                                <select
+                                    value={equipmentForm.mode}
+                                    onChange={(e) =>
+                                        setEquipmentForm({ ...equipmentForm, mode: e.target.value })
+                                    }
+                                    className="w-full border rounded-lg px-4 py-2 mb-2"
+                                >
+                                    <option value="single">Single Date</option>
+                                    <option value="specific">Specific Dates (max 4)</option>
+                                    <option value="range">Date Range (max 1 week)</option>
+                                </select>
+
+                                {/* SINGLE */}
+                                {equipmentForm.mode === 'single' && (
+                                    <input
+                                        type="date"
+                                        value={equipmentForm.date}
+                                        min={new Date().toISOString().split('T')[0]}
+                                        onChange={(e) =>
+                                            setEquipmentForm({ ...equipmentForm, date: e.target.value })
+                                        }
+                                        className="w-full border rounded-lg px-4 py-2"
+                                        required
+                                    />
+                                )}
+
+                                {/* SPECIFIC */}
+                                {equipmentForm.mode === 'specific' &&
+                                    equipmentForm.specificDates.map((d, i) => (
+                                        <input
+                                            key={i}
+                                            type="date"
+                                            value={d}
+                                            min={new Date().toISOString().split('T')[0]}
+                                            onChange={(e) => {
+                                                const updated = [...equipmentForm.specificDates];
+                                                updated[i] = e.target.value;
+                                                setEquipmentForm({ ...equipmentForm, specificDates: updated });
+                                            }}
+                                            className="w-full border rounded-lg px-4 py-2 mb-1"
+                                        />
+                                    ))}
+
+                                {/* RANGE */}
+                                {equipmentForm.mode === 'range' && (
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="date"
+                                            value={equipmentForm.rangeStart}
+                                            min={new Date().toISOString().split('T')[0]}
+                                            onChange={(e) =>
+                                                setEquipmentForm({ ...equipmentForm, rangeStart: e.target.value })
+                                            }
+                                            className="w-full border rounded-lg px-4 py-2"
+                                        />
+                                        <input
+                                            type="date"
+                                            value={equipmentForm.rangeEnd}
+                                            min={equipmentForm.rangeStart}
+                                            onChange={(e) =>
+                                                setEquipmentForm({ ...equipmentForm, rangeEnd: e.target.value })
+                                            }
+                                            className="w-full border rounded-lg px-4 py-2"
+                                        />
+                                    </div>
+                                )}
                             </div>
+
                         </div>
 
                         {/* PURPOSE */}
