@@ -25,6 +25,17 @@ export default function EquipmentBooking() {
     const equipmentStatuses = ['Pending', 'Approved', 'Rejected', 'Returned'];
     const [showReceiptModal, setShowReceiptModal] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState(null);
+    const [filter, setFilter] = useState({
+        search: '',
+        equipment: 'All',
+        department: 'All',
+        facility: 'All',
+        dateFrom: '',
+        dateTo: ''
+    });
+    const handleFilterChange = (e) => {
+        setFilter({ ...filter, [e.target.name]: e.target.value });
+    };
 
     const isAdmin = true;
     useEffect(() => {
@@ -177,42 +188,6 @@ export default function EquipmentBooking() {
         const updated = equipmentForm.equipments.filter((_, i) => i !== index);
         setEquipmentForm({ ...equipmentForm, equipments: updated });
     };
-
-    // ========================== FILTER AVAILABLE EQUIPMENTS ==========================
-    // useEffect(() => {
-    //     const { date, timeStart, timeEnd } = equipmentForm;
-    //     if (!date || !timeStart || !timeEnd) {
-    //         setFilteredEquipments([]);
-    //         return;
-    //     }
-
-    //     const toMinutes = t => {
-    //         const [h, m] = t.split(':').map(Number);
-    //         return h * 60 + m;
-    //     };
-    //     const startMin = toMinutes(timeStart);
-    //     const endMin = toMinutes(timeEnd);
-
-    //     const availableNow = availableEquipments.filter(eq => {
-    //         for (let b of bookings) {
-    //             if (!b.equipments || !Array.isArray(b.equipments)) continue;
-    //             if (!b.dates || !b.timeStart || !b.timeEnd) continue;
-
-    //             const bookedDate = new Date(b.dates[0]).toISOString().split('T')[0];
-    //             if (bookedDate !== date) continue;
-
-    //             if (!b.equipments.some(beq => parseInt(beq.equipmentId) === eq.id)) continue;
-
-    //             const bookedStart = toMinutes(b.timeStart);
-    //             const bookedEnd = toMinutes(b.timeEnd);
-
-    //             if (startMin < bookedEnd && endMin > bookedStart) return false; // conflict
-    //         }
-    //         return true;
-    //     });
-
-    //     setFilteredEquipments(availableNow);
-    // }, [equipmentForm.date, equipmentForm.timeStart, equipmentForm.timeEnd, availableEquipments, bookings]);
 
     const getFilteredEquipmentsForDropdown = (index) => {
         const selectedIds = equipmentForm.equipments.filter((_, i) => i !== index);
@@ -645,6 +620,135 @@ export default function EquipmentBooking() {
 
             {/* BOOKINGS TABLE */}
             <div className="bg-white rounded-xl shadow-md overflow-x-auto">
+                <div className="bg-white rounded-xl shadow-md p-8 w-full mt-8">
+                    <h2 className="text-2xl font-bold text-[#96161C] mb-4">
+                        Equipment Booking Filters
+                    </h2>
+
+                    <div className="flex flex-wrap gap-4 items-end">
+                        {/* Search Purpose */}
+                        <div className="flex-1 min-w-[180px]">
+                            <label className="block text-xs font-semibold mb-1 text-[#96161C]">
+                                Search Purpose
+                            </label>
+                            <input
+                                type="text"
+                                name="search"
+                                value={filter.search}
+                                onChange={handleFilterChange}
+                                placeholder="Search by purpose"
+                                className="border rounded-lg px-3 py-2 w-full"
+                            />
+                        </div>
+
+                        {/* Equipment */}
+                        <div className="flex-1 min-w-[160px]">
+                            <label className="block text-xs font-semibold mb-1 text-[#96161C]">
+                                Equipment
+                            </label>
+                            <select
+                                name="equipment"
+                                value={filter.equipment}
+                                onChange={handleFilterChange}
+                                className="border rounded-lg px-3 py-2 w-full"
+                            >
+                                <option value="All">All</option>
+                                {availableEquipments.map(eq => (
+                                    <option key={eq.id} value={eq.id}>
+                                        {eq.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Department */}
+                        <div className="flex-1 min-w-[160px]">
+                            <label className="block text-xs font-semibold mb-1 text-[#96161C]">
+                                Department
+                            </label>
+                            <select
+                                name="department"
+                                value={filter.department}
+                                onChange={handleFilterChange}
+                                className="border rounded-lg px-3 py-2 w-full"
+                            >
+                                <option value="All">All</option>
+                                {departments.map(d => (
+                                    <option key={d.id} value={d.id}>
+                                        {d.abbreviation}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Facility */}
+                        <div className="flex-1 min-w-[160px]">
+                            <label className="block text-xs font-semibold mb-1 text-[#96161C]">
+                                Facility
+                            </label>
+                            <select
+                                name="facility"
+                                value={filter.facility}
+                                onChange={handleFilterChange}
+                                className="border rounded-lg px-3 py-2 w-full"
+                            >
+                                <option value="All">All</option>
+                                {facilities.map(f => (
+                                    <option key={f.id} value={f.id}>
+                                        {f.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Date From */}
+                        <div className="flex-1 min-w-[140px]">
+                            <label className="block text-xs font-semibold mb-1 text-[#96161C]">
+                                Date From
+                            </label>
+                            <input
+                                type="date"
+                                name="dateFrom"
+                                value={filter.dateFrom}
+                                onChange={handleFilterChange}
+                                className="border rounded-lg px-3 py-2 w-full"
+                            />
+                        </div>
+
+                        {/* Date To */}
+                        <div className="flex-1 min-w-[140px]">
+                            <label className="block text-xs font-semibold mb-1 text-[#96161C]">
+                                Date To
+                            </label>
+                            <input
+                                type="date"
+                                name="dateTo"
+                                value={filter.dateTo}
+                                onChange={handleFilterChange}
+                                className="border rounded-lg px-3 py-2 w-full"
+                            />
+                        </div>
+
+                        {/* Reset */}
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setFilter({
+                                    search: '',
+                                    equipment: 'All',
+                                    department: 'All',
+                                    facility: 'All',
+                                    dateFrom: '',
+                                    dateTo: ''
+                                })
+                            }
+                            className="bg-[#96161C] text-white px-6 py-2 rounded-lg font-semibold"
+                        >
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-[#96161C]">
                         <tr>
@@ -661,94 +765,114 @@ export default function EquipmentBooking() {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
-                        {bookings.map((b, index) => {
-                            const bookingEquipmentId = Number(b.equipment_type_id);
-                            const hasPivotAccess = userEquipmentIds.includes(bookingEquipmentId);
+                        {bookings
+                            .filter(b =>
+                                (filter.search === '' ||
+                                    b.purpose?.toLowerCase().includes(filter.search.toLowerCase())) &&
 
-                            return (
-                                <tr key={b.id} className="hover:bg-gray-50 transition cursor-pointer" onClick={() => {
-                                    setSelectedBooking(b);
-                                    setShowReceiptModal(true);
-                                }}>
-                                    <td className="px-6 py-4 font-medium text-gray-900">
-                                        {(() => {
-                                            const equipment = availableEquipments.find(eq => eq.id === b.equipment_type_id);
-                                            return equipment ? `${equipment.name} (${equipment.model_id})` : 'Unknown';
-                                        })()}
-                                    </td>
-                                    <td className="px-6 py-4">{getDepartmentName(b.affiliation_id)}</td>
-                                    <td className="px-6 py-4">{getFacilityName(b.facility_id)}</td>
-                                    <td className="px-6 py-4">{formatBookingDates(b.dates)}</td>
-                                    <td className="px-6 py-4">
-                                        {b.time_start && b.time_end
-                                            ? `${b.time_start.slice(0, 5)} - ${b.time_end.slice(0, 5)}`
-                                            : '—'}
-                                    </td>
-                                    <td className="px-6 py-4">{b.purpose}</td>
-                                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                                        {!hasPivotAccess ? (
-                                            <span className="text-gray-400 italic">No Access</span>
-                                        ) : editStatusId === b.id ? (
-                                            <select
-                                                value={b.status}
-                                                onChange={(e) =>
-                                                    handleEquipmentStatusChange(b.id, e.target.value)
-                                                }
-                                                onBlur={() => setEditStatusId(null)}
-                                                autoFocus
-                                                className="border rounded-lg px-3 py-2 text-sm"
-                                            >
-                                                {equipmentStatuses.map(status => (
-                                                    <option key={status} value={status}>
-                                                        {status}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        ) : (
-                                            <span
-                                                className={`px-3 py-1 rounded-full text-xs font-bold cursor-pointer
+                                (filter.equipment === 'All' ||
+                                    String(b.equipment_type_id) === String(filter.equipment)) &&
+
+                                (filter.department === 'All' ||
+                                    String(b.affiliation_id) === String(filter.department)) &&
+
+                                (filter.facility === 'All' ||
+                                    String(b.facility_id) === String(filter.facility)) &&
+
+                                (filter.dateFrom === '' ||
+                                    b.dates?.[0] >= filter.dateFrom) &&
+
+                                (filter.dateTo === '' ||
+                                    b.dates?.[0] <= filter.dateTo)
+                            )
+                            .map((b, index) => {
+                                const bookingEquipmentId = Number(b.equipment_type_id);
+                                const hasPivotAccess = userEquipmentIds.includes(bookingEquipmentId);
+
+                                return (
+                                    <tr key={b.id} className="hover:bg-gray-50 transition cursor-pointer" onClick={() => {
+                                        setSelectedBooking(b);
+                                        setShowReceiptModal(true);
+                                    }}>
+                                        <td className="px-6 py-4 font-medium text-gray-900">
+                                            {(() => {
+                                                const equipment = availableEquipments.find(eq => eq.id === b.equipment_type_id);
+                                                return equipment ? `${equipment.name} (${equipment.model_id})` : 'Unknown';
+                                            })()}
+                                        </td>
+                                        <td className="px-6 py-4">{getDepartmentName(b.affiliation_id)}</td>
+                                        <td className="px-6 py-4">{getFacilityName(b.facility_id)}</td>
+                                        <td className="px-6 py-4">{formatBookingDates(b.dates)}</td>
+                                        <td className="px-6 py-4">
+                                            {b.time_start && b.time_end
+                                                ? `${b.time_start.slice(0, 5)} - ${b.time_end.slice(0, 5)}`
+                                                : '—'}
+                                        </td>
+                                        <td className="px-6 py-4">{b.purpose}</td>
+                                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                                            {!hasPivotAccess ? (
+                                                <span className="text-gray-400 italic">No Access</span>
+                                            ) : editStatusId === b.id ? (
+                                                <select
+                                                    value={b.status}
+                                                    onChange={(e) =>
+                                                        handleEquipmentStatusChange(b.id, e.target.value)
+                                                    }
+                                                    onBlur={() => setEditStatusId(null)}
+                                                    autoFocus
+                                                    className="border rounded-lg px-3 py-2 text-sm"
+                                                >
+                                                    {equipmentStatuses.map(status => (
+                                                        <option key={status} value={status}>
+                                                            {status}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <span
+                                                    className={`px-3 py-1 rounded-full text-xs font-bold cursor-pointer
         ${b.status === 'Approved'
-                                                        ? 'bg-green-100 text-green-700 border border-green-300'
-                                                        : b.status === 'Rejected'
-                                                            ? 'bg-red-100 text-red-700 border border-red-300'
-                                                            : b.status === 'Returned'
-                                                                ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                                                                : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                                                    }`}
-                                                onClick={() => setEditStatusId(b.id)}
-                                            >
-                                                {b.status}
-                                            </span>
-                                        )}
-                                    </td>
-
-
-                                    <td className="px-6 py-4 flex gap-2">
-                                        {!hasPivotAccess ? (
-                                            <span className="text-gray-400 italic">No Access</span>
-                                        ) : isAdmin ? (
-                                            <>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleEdit(b); }}
-                                                    className="px-4 py-1 text-sm font-semibold rounded-full border border-[#96161C] text-[#96161C]"
+                                                            ? 'bg-green-100 text-green-700 border border-green-300'
+                                                            : b.status === 'Rejected'
+                                                                ? 'bg-red-100 text-red-700 border border-red-300'
+                                                                : b.status === 'Returned'
+                                                                    ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                                                    : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                                                        }`}
+                                                    onClick={() => setEditStatusId(b.id)}
                                                 >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleDelete(b.id); }}
-                                                    className="px-4 py-1 text-sm font-semibold rounded-full border border-red-600 text-red-600"
-                                                >
-                                                    Delete
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <span className="text-gray-400 text-sm">No Actions</span>
-                                        )}
-                                    </td>
+                                                    {b.status}
+                                                </span>
+                                            )}
+                                        </td>
 
-                                </tr>
-                            );
-                        })}
+
+                                        <td className="px-6 py-4 flex gap-2">
+                                            {!hasPivotAccess ? (
+                                                <span className="text-gray-400 italic">No Access</span>
+                                            ) : isAdmin ? (
+                                                <>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleEdit(b); }}
+                                                        className="px-4 py-1 text-sm font-semibold rounded-full border border-[#96161C] text-[#96161C]"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleDelete(b.id); }}
+                                                        className="px-4 py-1 text-sm font-semibold rounded-full border border-red-600 text-red-600"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <span className="text-gray-400 text-sm">No Actions</span>
+                                            )}
+                                        </td>
+
+                                    </tr>
+                                );
+                            })}
                     </tbody>
                 </table>
             </div>
