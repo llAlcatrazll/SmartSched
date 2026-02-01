@@ -738,7 +738,7 @@ export default function Booking() {
 
 
 
-    const ActionButton = ({ label, variant = "default", disabled }) => {
+    const ActionButton = ({ label, variant = "default", disabled, onClick }) => {
         const base = "px-4 py-1.5 rounded-md text-sm font-medium transition focus:outline-none";
         const styles = {
             default: "bg-blue-100 text-blue-800 hover:bg-blue-200",
@@ -1794,22 +1794,26 @@ export default function Booking() {
                                                     <button
                                                         onClick={() => handleDelete(b.id)} // assuming b.id is the primary key
                                                         className="text-red-600 hover:text-red-800 transition"
-                                                        title="Delete Booking"
+                                                        title="Delete adasdasdad"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block" fill="currentColor" viewBox="0 0 24 24">
                                                             <path d="M9 3v1H4v2h16V4h-5V3H9zm1 5v12h2V8h-2zm4 0v12h2V8h-2z" />
                                                         </svg>
                                                     </button>
                                                 }
-                                                <ActionButton
-                                                    label="Payment"
-                                                    variant="warning"
+                                                <button
                                                     onClick={() => {
-                                                        setEditingPaymentBookingId(booking.id);
-                                                        setPaymentValue(booking.booking_fee ?? 0);
-                                                        setShowPaymentModal(true);
+                                                        console.log("🟣 PAYMENT BUTTON FIRED");
+                                                        openPaymentModal(b);
                                                     }}
-                                                />
+                                                    className="text-red-600 hover:text-red-800 transition"
+                                                    title="Delete adasdasdad"
+
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path d="M17.414 2.586a2 2 0 010 2.828L8.414 14.414l-4.828 1.414 1.414-4.828L14.586 2.586a2 2 0 012.828 0z" />
+                                                    </svg>
+                                                </button>
                                             </td>
                                         </tr>
                                     </React.Fragment>
@@ -2052,12 +2056,17 @@ export default function Booking() {
                                     <input
                                         type="number"
                                         min="0"
-                                        step="0.01"
+                                        step="1"
                                         value={paymentValue}
-                                        onChange={(e) => setPaymentValue(e.target.value)}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            console.log("💰 Payment input changed:", val);
+                                            setPaymentValue(val);
+                                        }}
                                         className="w-full border rounded-lg px-4 py-2 mb-4"
                                         required
                                     />
+
 
                                     <div className="flex justify-end gap-2">
                                         <button
