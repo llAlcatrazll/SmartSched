@@ -6,7 +6,7 @@ const { Pool } = require("pg");
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL
 });
-
+// ONLY CREATE IS AVAILABLE  for system limitations and to avoid system malfunctions with data mishandling
 require("dotenv").config();
 
 router.post("/", async (req, res) => {
