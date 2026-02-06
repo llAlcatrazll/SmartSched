@@ -10,6 +10,26 @@ const pool = new Pool({
 });
 
 router.post("/", async (req, res) => {
+    function parseMonthDayToISO(text, year = 2026) {
+        const months = {
+            january: "01",
+            february: "02",
+            march: "03",
+            april: "04",
+            may: "05",
+            june: "06",
+            july: "07",
+            august: "08",
+            september: "09",
+            october: "10",
+            november: "11",
+            december: "12"
+        };
+
+        const [monthWord, day] = text.toLowerCase().split(" ");
+        return `${year}-${months[monthWord]}-${day.padStart(2, "0")}`;
+    }
+
     const { message, bookings = {}, currentDateTime } = req.body;
     const formattedBookings = [];
 
@@ -24,25 +44,6 @@ router.post("/", async (req, res) => {
     const vehicleMatch = message.match(/\b(bus|hilux|van|car)\b/i);
 
     if (dateMatch && vehicleMatch) {
-        function parseMonthDayToISO(text, year = 2026) {
-            const months = {
-                january: "01",
-                february: "02",
-                march: "03",
-                april: "04",
-                may: "05",
-                june: "06",
-                july: "07",
-                august: "08",
-                september: "09",
-                october: "10",
-                november: "11",
-                december: "12"
-            };
-
-            const [monthWord, day] = text.toLowerCase().split(" ");
-            return `${year}-${months[monthWord]}-${day.padStart(2, "0")}`;
-        }
 
         const dateISO = parseMonthDayToISO(dateMatch[0]);
         const keyword = vehicleMatch[0].toLowerCase();
@@ -78,6 +79,49 @@ router.post("/", async (req, res) => {
             } else {
                 formattedBookings.push(
                     `- ${v.vehicle_name} is ✅ AVAILABLE on ${dateISO}`
+                );
+            }
+        }
+    }
+    /* ==================================================
+       EQUIPMENT AVAILABILITY (ARRAY-SAFE, FACILITY-LIKE)
+    ================================================== */
+
+    const equipmentDateMatch = message.match(
+        /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}/i
+    );
+
+    if (equipmentDateMatch) {
+        const dateISO = parseMonthDayToISO(equipmentDateMatch[0]);
+        const messageLower = message.toLowerCase();
+
+        const equipmentsResult = await pool.query(
+            `SELECT id, name FROM "Equipments" WHERE enabled = true`
+        );
+
+        for (const eq of equipmentsResult.rows) {
+            if (!messageLower.includes(eq.name.toLowerCase())) continue;
+
+            const bookingResult = await pool.query(
+                `
+            SELECT purpose, time_start, time_end
+            FROM "Equipment"
+            WHERE equipment_type_id = $1
+              AND $2 = ANY(dates)
+            LIMIT 1
+            `,
+                [eq.id, dateISO]
+            );
+
+            if (bookingResult.rowCount > 0) {
+                formattedBookings.push(
+                    `- ${eq.name} is ❌ UNAVAILABLE on ${dateISO}
+  Time: ${bookingResult.rows[0].time_start?.slice(0, 5)}–${bookingResult.rows[0].time_end?.slice(0, 5)}
+  Purpose: ${bookingResult.rows[0].purpose}`
+                );
+            } else {
+                formattedBookings.push(
+                    `- ${eq.name} is ✅ AVAILABLE on ${dateISO}`
                 );
             }
         }
@@ -209,6 +253,19 @@ VEHICLE:
   "purpose": "",
   "destination": ""
 }
+  EQUIPMENT:
+{
+  "intent": "create_booking",
+  "resource_type": "equipment",
+  "equipments": [{ "equipment_type_id": "number", "quantity": 1 }],
+  "department_id": "number",
+  "facility_id": "number",
+  "dates": ["YYYY-MM-DD"],
+  "time_start": "HH:MM",
+  "time_end": "HH:MM",
+  "purpose": ""
+}
+
 
 Current time: ${currentDateTime}
 
@@ -267,6 +324,36 @@ ${formattedBookings.join("\n") || "None"}
                 endpoint = "/api/create-vehicle-booking";
 
             if (!endpoint) throw new Error("Unknown resource type");
+            /* ==================================================
+               EQUIPMENT NAME → EQUIPMENT ID (DYNAMIC)
+            ================================================== */
+
+            if (
+                bookingData.resource_type === "equipment" &&
+                (!bookingData.equipment_type_id || isNaN(Number(bookingData.equipment_type_id)))
+            ) {
+                const equipmentsResult = await pool.query(
+                    `SELECT id, name FROM "Equipments" WHERE enabled = true`
+                );
+
+                const messageLower = message.toLowerCase();
+
+                for (const eq of equipmentsResult.rows) {
+                    if (messageLower.includes(eq.name.toLowerCase())) {
+                        bookingData.equipment_type_id = eq.id;
+                        break;
+                    }
+                }
+            }
+
+            if (
+                bookingData.resource_type === "equipment" &&
+                (!bookingData.equipment_type_id || isNaN(Number(bookingData.equipment_type_id)))
+            ) {
+                throw new Error(
+                    "Equipment could not be identified. Please specify the equipment name."
+                );
+            }
 
             if (bookingData.resource_type === "facility") {
                 bookingData.creator_id = 1;
