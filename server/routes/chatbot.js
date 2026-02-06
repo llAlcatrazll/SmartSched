@@ -3,18 +3,66 @@ const router = express.Router();
 const axios = require("axios");
 const { Pool } = require("pg");
 
+require("dotenv").config();
+
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL
 });
-// ONLY CREATE IS AVAILABLE  for system limitations and to avoid system malfunctions with data mishandling  
-require("dotenv").config();
 
 router.post("/", async (req, res) => {
+
     const { message, bookings = {}, currentDateTime } = req.body;
 
     const formattedBookings = [];
 
-    // VEHICLE LOOKUP
+    /* --------------------------------------------------
+       CASUAL VEHICLE AVAILABILITY LOOKUP
+    -------------------------------------------------- */
+    const availabilityDateMatch = message.match(
+        /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}/i
+    );
+
+    const mentionsVehicle = /bus|vehicle|van|car|hilux/i.test(message);
+
+    if (availabilityDateMatch && mentionsVehicle) {
+        const parsedDate = new Date(`${availabilityDateMatch[0]}, 2026`);
+        const dateISO = parsedDate.toISOString().split("T")[0];
+
+        const availableVehiclesResult = await pool.query(
+            `
+            SELECT v.vehicle_name
+            FROM "Vehicles" v
+            WHERE v.enabled = true
+            AND v.id NOT IN (
+                SELECT vb.vehicle_id::INTEGER
+                FROM "VehicleBooking" vb
+                WHERE vb.deleted = false
+                AND $1 = ANY(vb.dates)
+            )
+            `,
+            [dateISO]
+        );
+
+        if (availableVehiclesResult.rowCount === 0) {
+            formattedBookings.push(
+                `- Vehicle availability on ${dateISO}: ❌ No vehicles are available.`
+            );
+        } else {
+            const names = availableVehiclesResult.rows
+                .map(v => v.vehicle_name)
+                .join(", ");
+
+            formattedBookings.push(
+                `- Vehicle availability on ${dateISO}: ✅ Available vehicles: ${names}`
+            );
+        }
+    }
+
+    /* --------------------------------------------------
+       LOOKUPS
+    -------------------------------------------------- */
+
+    // Vehicles
     const vehicleResult = await pool.query(
         `SELECT id, vehicle_name FROM "Vehicles" WHERE enabled = true`
     );
@@ -24,7 +72,7 @@ router.post("/", async (req, res) => {
         vehicleMap[v.id] = v.vehicle_name;
     });
 
-    // FACILITY LOOKUP
+    // Facilities
     const facilityResult = await pool.query(
         `SELECT id, name FROM "Facilities" WHERE enabled = true`
     );
@@ -34,29 +82,34 @@ router.post("/", async (req, res) => {
         facilityMap[f.id] = f.name;
     });
 
-    // LATEST VEHICLE BOOKING
+    /* --------------------------------------------------
+       LATEST VEHICLE BOOKING (CONTEXT ONLY)
+    -------------------------------------------------- */
     const latestVehicleBookingResult = await pool.query(`
-    SELECT vb.*, v.vehicle_name
-    FROM "VehicleBooking" vb
-    LEFT JOIN "Vehicles" v
-      ON v.id = vb.vehicle_id::INTEGER
-    WHERE vb.deleted = false
-    ORDER BY vb.id DESC
-    LIMIT 1
-`);
+        SELECT vb.*, v.vehicle_name
+        FROM "VehicleBooking" vb
+        LEFT JOIN "Vehicles" v
+          ON v.id = vb.vehicle_id::INTEGER
+        WHERE vb.deleted = false
+        ORDER BY vb.id DESC
+        LIMIT 1
+    `);
 
     if (latestVehicleBookingResult.rows.length > 0) {
         const b = latestVehicleBookingResult.rows[0];
 
         formattedBookings.push(
             `- Latest Vehicle Booking:
-  Vehicle: ${b.vehicle_name || `Vehicle ID ${b.vehicle_id}`}
+  Vehicle: ${b.vehicle_name || `Vehicle ${b.vehicle_id}`}
   Date(s): ${Array.isArray(b.dates) ? b.dates.join(", ") : "N/A"}
   Purpose: ${b.purpose || "N/A"}
   Destination: ${b.destination || "N/A"}`
         );
     }
 
+    /* --------------------------------------------------
+       EXISTING BOOKINGS PASSED FROM FRONTEND
+    -------------------------------------------------- */
 
     if (Array.isArray(bookings.facilities)) {
         bookings.facilities.forEach(b => {
@@ -65,11 +118,10 @@ router.post("/", async (req, res) => {
 
             formattedBookings.push(
                 `- Facility: ${facilityName}
-       Date: ${b.date}
-       Time: ${b.startTime}–${b.endTime}
-       Event: ${b.name}`
+  Date: ${b.date}
+  Time: ${b.startTime}–${b.endTime}
+  Event: ${b.name}`
             );
-
         });
     }
 
@@ -91,7 +143,6 @@ router.post("/", async (req, res) => {
         });
     }
 
-
     if (Array.isArray(bookings.equipments)) {
         bookings.equipments.forEach(e => {
             formattedBookings.push(
@@ -100,9 +151,9 @@ router.post("/", async (req, res) => {
         });
     }
 
-    /* ------------------------------------
-       SYSTEM PROMPT (MINIMAL, STABLE)
-    ------------------------------------ */
+    /* --------------------------------------------------
+       SYSTEM PROMPT
+    -------------------------------------------------- */
     const systemPrompt = `
 You are a helpful booking assistant.
 
@@ -127,6 +178,7 @@ FACILITY:
   "reservation": false,
   "insider": false
 }
+
 When users ask for the latest booking, use the most recent booking by ID.
 
 VEHICLE:
@@ -161,10 +213,11 @@ Existing bookings:
 ${formattedBookings.join("\n") || "None"}
 `;
 
-    /* ------------------------------------
-       COHERE CHAT (OLD WORKING STYLE)
-    ------------------------------------ */
+    /* --------------------------------------------------
+       COHERE CHAT
+    -------------------------------------------------- */
     let aiReply = "";
+
     try {
         const cohereResponse = await axios.post(
             "https://api.cohere.ai/v1/chat",
@@ -186,9 +239,9 @@ ${formattedBookings.join("\n") || "None"}
         return res.json({ reply: "AI service unavailable." });
     }
 
-    /* ------------------------------------
-       PARSE JSON (OLD SAFE METHOD)
-    ------------------------------------ */
+    /* --------------------------------------------------
+       PARSE JSON (SAFE)
+    -------------------------------------------------- */
     const jsonMatch = aiReply.match(/\{[\s\S]*\}/);
     let bookingData = null;
 
@@ -198,19 +251,17 @@ ${formattedBookings.join("\n") || "None"}
         } catch { }
     }
 
-    /* ------------------------------------
-       HANDLE REAL BOOKING CREATION
-    ------------------------------------ */
+    /* --------------------------------------------------
+       HANDLE BOOKING CREATION
+    -------------------------------------------------- */
     if (bookingData?.intent === "create_booking") {
         try {
             let endpoint = "";
 
             if (bookingData.resource_type === "facility")
                 endpoint = "/api/create-booking";
-
             if (bookingData.resource_type === "vehicle")
                 endpoint = "/api/create-vehicle-booking";
-
             if (bookingData.resource_type === "equipment")
                 endpoint = "/api/create-equipment-booking";
 
@@ -218,9 +269,9 @@ ${formattedBookings.join("\n") || "None"}
 
             if (bookingData.resource_type === "facility") {
                 bookingData.creator_id = 1;
-                bookingData.requested_by = bookingData.requested_by || "AI";
-                bookingData.organization = bookingData.organization || "N/A";
-                bookingData.contact = bookingData.contact || "N/A";
+                bookingData.requested_by ||= "AI";
+                if (!bookingData.organization) bookingData.organization = "N/A";
+                if (!bookingData.contact) bookingData.contact = "N/A";
             }
 
             const response = await axios.post(
@@ -241,9 +292,9 @@ ${formattedBookings.join("\n") || "None"}
         }
     }
 
-    /* ------------------------------------
-       NORMAL CHAT (UNCHANGED)
-    ------------------------------------ */
+    /* --------------------------------------------------
+       NORMAL CHAT
+    -------------------------------------------------- */
     return res.json({ reply: aiReply });
 });
 
