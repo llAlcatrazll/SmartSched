@@ -10,59 +10,84 @@ const pool = new Pool({
 });
 
 router.post("/", async (req, res) => {
-
     const { message, bookings = {}, currentDateTime } = req.body;
-
     const formattedBookings = [];
 
-    /* --------------------------------------------------
-       CASUAL VEHICLE AVAILABILITY LOOKUP
-    -------------------------------------------------- */
-    const availabilityDateMatch = message.match(
+    /* ==================================================
+       VEHICLE AVAILABILITY (ARRAY-SAFE, FACILITY-LIKE)
+    ================================================== */
+
+    const dateMatch = message.match(
         /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}/i
     );
 
-    const mentionsVehicle = /bus|vehicle|van|car|hilux/i.test(message);
+    const vehicleMatch = message.match(/\b(bus|hilux|van|car)\b/i);
 
-    if (availabilityDateMatch && mentionsVehicle) {
-        const parsedDate = new Date(`${availabilityDateMatch[0]}, 2026`);
-        const dateISO = parsedDate.toISOString().split("T")[0];
+    if (dateMatch && vehicleMatch) {
+        function parseMonthDayToISO(text, year = 2026) {
+            const months = {
+                january: "01",
+                february: "02",
+                march: "03",
+                april: "04",
+                may: "05",
+                june: "06",
+                july: "07",
+                august: "08",
+                september: "09",
+                october: "10",
+                november: "11",
+                december: "12"
+            };
 
-        const availableVehiclesResult = await pool.query(
+            const [monthWord, day] = text.toLowerCase().split(" ");
+            return `${year}-${months[monthWord]}-${day.padStart(2, "0")}`;
+        }
+
+        const dateISO = parseMonthDayToISO(dateMatch[0]);
+        const keyword = vehicleMatch[0].toLowerCase();
+
+        const vehiclesResult = await pool.query(
             `
-            SELECT v.vehicle_name
-            FROM "Vehicles" v
-            WHERE v.enabled = true
-            AND v.id NOT IN (
-                SELECT vb.vehicle_id::INTEGER
-                FROM "VehicleBooking" vb
-                WHERE vb.deleted = false
-                AND $1 = ANY(vb.dates)
-            )
-            `,
-            [dateISO]
+        SELECT id, vehicle_name
+        FROM "Vehicles"
+        WHERE enabled = true
+          AND LOWER(vehicle_name) LIKE '%' || $1 || '%'
+        `,
+            [keyword]
         );
 
-        if (availableVehiclesResult.rowCount === 0) {
-            formattedBookings.push(
-                `- Vehicle availability on ${dateISO}: ❌ No vehicles are available.`
+        for (const v of vehiclesResult.rows) {
+            const bookingResult = await pool.query(
+                `
+            SELECT purpose, destination
+            FROM "VehicleBooking"
+            WHERE vehicle_id = $1
+              AND deleted = false
+              AND $2 = ANY(dates)
+            LIMIT 1
+            `,
+                [String(v.id), dateISO]
             );
-        } else {
-            const names = availableVehiclesResult.rows
-                .map(v => v.vehicle_name)
-                .join(", ");
 
-            formattedBookings.push(
-                `- Vehicle availability on ${dateISO}: ✅ Available vehicles: ${names}`
-            );
+            if (bookingResult.rowCount > 0) {
+                formattedBookings.push(
+                    `- ${v.vehicle_name} is ❌ UNAVAILABLE on ${dateISO}
+  Purpose: ${bookingResult.rows[0].purpose}`
+                );
+            } else {
+                formattedBookings.push(
+                    `- ${v.vehicle_name} is ✅ AVAILABLE on ${dateISO}`
+                );
+            }
         }
     }
 
-    /* --------------------------------------------------
-       LOOKUPS
-    -------------------------------------------------- */
 
-    // Vehicles
+    /* ==================================================
+       LOOKUPS (FOR CONTEXT)
+    ================================================== */
+
     const vehicleResult = await pool.query(
         `SELECT id, vehicle_name FROM "Vehicles" WHERE enabled = true`
     );
@@ -72,7 +97,6 @@ router.post("/", async (req, res) => {
         vehicleMap[v.id] = v.vehicle_name;
     });
 
-    // Facilities
     const facilityResult = await pool.query(
         `SELECT id, name FROM "Facilities" WHERE enabled = true`
     );
@@ -82,9 +106,10 @@ router.post("/", async (req, res) => {
         facilityMap[f.id] = f.name;
     });
 
-    /* --------------------------------------------------
-       LATEST VEHICLE BOOKING (CONTEXT ONLY)
-    -------------------------------------------------- */
+    /* ==================================================
+       LATEST VEHICLE BOOKING (CONTEXT)
+    ================================================== */
+
     const latestVehicleBookingResult = await pool.query(`
         SELECT vb.*, v.vehicle_name
         FROM "VehicleBooking" vb
@@ -107,9 +132,9 @@ router.post("/", async (req, res) => {
         );
     }
 
-    /* --------------------------------------------------
-       EXISTING BOOKINGS PASSED FROM FRONTEND
-    -------------------------------------------------- */
+    /* ==================================================
+       EXISTING BOOKINGS FROM FRONTEND
+    ================================================== */
 
     if (Array.isArray(bookings.facilities)) {
         bookings.facilities.forEach(b => {
@@ -143,17 +168,10 @@ router.post("/", async (req, res) => {
         });
     }
 
-    if (Array.isArray(bookings.equipments)) {
-        bookings.equipments.forEach(e => {
-            formattedBookings.push(
-                `- Equipment: ${e.equipment_name} on ${e.date} (qty ${e.quantity})`
-            );
-        });
-    }
-
-    /* --------------------------------------------------
+    /* ==================================================
        SYSTEM PROMPT
-    -------------------------------------------------- */
+    ================================================== */
+
     const systemPrompt = `
 You are a helpful booking assistant.
 
@@ -179,8 +197,6 @@ FACILITY:
   "insider": false
 }
 
-When users ask for the latest booking, use the most recent booking by ID.
-
 VEHICLE:
 {
   "intent": "create_booking",
@@ -194,37 +210,22 @@ VEHICLE:
   "destination": ""
 }
 
-EQUIPMENT:
-{
-  "intent": "create_booking",
-  "resource_type": "equipment",
-  "equipments": [{ "equipmentId": "number", "quantity": "number" }],
-  "departmentId": "number",
-  "facilityId": "number",
-  "dates": ["YYYY-MM-DD"],
-  "purpose": "",
-  "timeStart": "HH:MM",
-  "timeEnd": "HH:MM"
-}
-
 Current time: ${currentDateTime}
 
 Existing bookings:
 ${formattedBookings.join("\n") || "None"}
 `;
 
-    /* --------------------------------------------------
+    /* ==================================================
        COHERE CHAT
-    -------------------------------------------------- */
+    ================================================== */
+
     let aiReply = "";
 
     try {
         const cohereResponse = await axios.post(
             "https://api.cohere.ai/v1/chat",
-            {
-                message,
-                preamble: systemPrompt
-            },
+            { message, preamble: systemPrompt },
             {
                 headers: {
                     Authorization: `Bearer ${process.env.COHERE_API_KEY}`,
@@ -239,9 +240,10 @@ ${formattedBookings.join("\n") || "None"}
         return res.json({ reply: "AI service unavailable." });
     }
 
-    /* --------------------------------------------------
-       PARSE JSON (SAFE)
-    -------------------------------------------------- */
+    /* ==================================================
+       PARSE JSON
+    ================================================== */
+
     const jsonMatch = aiReply.match(/\{[\s\S]*\}/);
     let bookingData = null;
 
@@ -251,9 +253,10 @@ ${formattedBookings.join("\n") || "None"}
         } catch { }
     }
 
-    /* --------------------------------------------------
-       HANDLE BOOKING CREATION
-    -------------------------------------------------- */
+    /* ==================================================
+       CREATE BOOKING
+    ================================================== */
+
     if (bookingData?.intent === "create_booking") {
         try {
             let endpoint = "";
@@ -262,8 +265,6 @@ ${formattedBookings.join("\n") || "None"}
                 endpoint = "/api/create-booking";
             if (bookingData.resource_type === "vehicle")
                 endpoint = "/api/create-vehicle-booking";
-            if (bookingData.resource_type === "equipment")
-                endpoint = "/api/create-equipment-booking";
 
             if (!endpoint) throw new Error("Unknown resource type");
 
@@ -272,6 +273,39 @@ ${formattedBookings.join("\n") || "None"}
                 bookingData.requested_by ||= "AI";
                 if (!bookingData.organization) bookingData.organization = "N/A";
                 if (!bookingData.contact) bookingData.contact = "N/A";
+            }
+            /* ==================================================
+               VEHICLE NAME → VEHICLE ID (DYNAMIC, NO HARD-CODE)
+            ================================================== */
+
+            if (
+                bookingData.resource_type === "vehicle" &&
+                (!bookingData.vehicle_id || isNaN(Number(bookingData.vehicle_id)))
+            ) {
+                // Fetch all enabled vehicles
+                const vehiclesResult = await pool.query(
+                    `SELECT id, vehicle_name FROM "Vehicles" WHERE enabled = true`
+                );
+
+                const messageLower = message.toLowerCase();
+
+                for (const v of vehiclesResult.rows) {
+                    const name = v.vehicle_name.toLowerCase();
+
+                    // Simple but effective name match
+                    if (messageLower.includes(name)) {
+                        bookingData.vehicle_id = v.id;
+                        break;
+                    }
+                }
+            }
+            if (
+                bookingData.resource_type === "vehicle" &&
+                (!bookingData.vehicle_id || isNaN(Number(bookingData.vehicle_id)))
+            ) {
+                throw new Error(
+                    "Vehicle could not be identified. Please specify the vehicle name."
+                );
             }
 
             const response = await axios.post(
@@ -292,9 +326,10 @@ ${formattedBookings.join("\n") || "None"}
         }
     }
 
-    /* --------------------------------------------------
+    /* ==================================================
        NORMAL CHAT
-    -------------------------------------------------- */
+    ================================================== */
+
     return res.json({ reply: aiReply });
 });
 
