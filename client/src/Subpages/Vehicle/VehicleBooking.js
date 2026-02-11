@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'; import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import Logo from '../../../src/assets/logos/cjc_logo.png'
 
 export default function VehicleBooking() {
     const [conflicts, setConflicts] = useState([]); // ⬅️ store conflicts
@@ -180,95 +181,167 @@ export default function VehicleBooking() {
     const downloadReceipt = async (booking) => {
         // 1. Create a temporary div to render receipt
         const receiptDiv = document.createElement("div");
-        receiptDiv.style.width = "800px"; // set width for PDF layout
-        receiptDiv.style.padding = "2rem";
+        receiptDiv.style.width = "420px";  // palm-sized width
+        receiptDiv.style.padding = "20px";
         receiptDiv.style.backgroundColor = "white";
-        receiptDiv.style.fontFamily = "Arial, sans-serif";
+        receiptDiv.style.fontFamily = "Helvetica, Arial, sans-serif";
         const vehicle = getVehicleDetails(booking, availableVehicles);
 
         receiptDiv.innerHTML = `
-<h1 style="color:#96161C; text-align:center;">School Vehicle Booking Receipt</h1>
-<h3 style="text-align:center; font-weight:normal;">
-  ${new Date().toLocaleDateString()}
-</h3>
+<div style="width:100%; font-family: 'Helvetica', Arial, sans-serif; color:#222;">
+<!-- HEADER WRAPPER -->
+<div style="border-bottom:1px solid #96161C; padding-bottom:12px;">
 
-<h3 style="color:#96161C; margin-top:2rem;">Booking Details</h3>
+  <!-- ROW 1: LOGO + SCHOOL INFO -->
+  <div style="
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:20px;
+  ">
 
-<table style="width:100%; border-collapse: collapse;">
-  <tr>
-    <th style="border:1px solid #333; padding:8px;">Vehicle Type</th>
-    <td style="border:1px solid #333; padding:8px;">
-      ${vehicle ? vehicle.vehicle_name : 'Unknown Vehicle'}
-    </td>
-  </tr>
+    <!-- LOGO -->
+    <img src="${Logo}" style="width:60px; height:auto;" />
 
-  <tr>
-    <th style="border:1px solid #333; padding:8px;">Vehicle Plate</th>
-    <td style="border:1px solid #333; padding:8px;">
-      ${vehicle?.plate_number || '—'}
-    </td>
-  </tr>
+    <!-- SCHOOL TEXT -->
+    <div style="text-align:left;">
+      <div style="font-size:18px; font-weight:700;">
+        Cor Jesu College
+      </div>
+      <div style="font-size:12px;">
+        Sacred Heart Avenue
+      </div>
+      <div style="font-size:12px;">
+        SY 2025–2026
+      </div>
+    </div>
 
-  <tr>
-    <th style="border:1px solid #333; padding:8px;">Requestor</th>
-    <td style="border:1px solid #333; padding:8px;">
-      ${booking.requestor}
-    </td>
-  </tr>
-
-  <tr>
-    <th style="border:1px solid #333; padding:8px;">Department</th>
-    <td style="border:1px solid #333; padding:8px;">
-      ${getDepartmentName(booking, affiliations)}
-    </td>
-  </tr>
-
-  <tr>
-    <th style="border:1px solid #333; padding:8px;">Driver</th>
-    <td style="border:1px solid #333; padding:8px;">
-      ${booking.driver_name || '—'}
-    </td>
-  </tr>
-
-  <tr>
-    <th style="border:1px solid #333; padding:8px;">Date</th>
-    <td style="border:1px solid #333; padding:8px;">
-      ${formatVehicleDates(booking.dates)}
-    </td>
-  </tr>
-
-  <tr>
-    <th style="border:1px solid #333; padding:8px;">Purpose</th>
-    <td style="border:1px solid #333; padding:8px;">
-      ${booking.purpose}
-    </td>
-  </tr>
-
-  <tr>
-    <th style="border:1px solid #333; padding:8px;">Destination</th>
-    <td style="border:1px solid #333; padding:8px;">
-      ${booking.destination}
-    </td>
-  </tr>
-
-  <tr>
-    <th style="border:1px solid #333; padding:8px;">Payment</th>
-    <td style="border:1px solid #333; padding:8px;">
-      ${booking.payment ? `₱${booking.payment}` : '—'}
-    </td>
-  </tr>
-</table>
-
-<div style="display:flex; justify-content:space-between; margin-top:3rem;">
-  <div style="text-align:center; width:45%;">
-    <div style="border-top:1px solid #333; margin-top:2rem;"></div>
-    <p>Requested By</p>
   </div>
 
-  <div style="text-align:center; width:45%;">
-    <div style="border-top:1px solid #333; margin-top:2rem;"></div>
-    <p>Approved By</p>
+  <!-- ROW 2: RECEIPT TITLE -->
+  <div style="
+    text-align:center;
+    margin-top:10px;
+    font-size:13px;
+    font-weight:700;
+    color:#96161C;
+    letter-spacing:2px;
+  ">
+    VEHICLE BOOKING RECEIPT
   </div>
+
+</div>
+
+
+
+
+<!-- COMPACT DETAILS -->
+<div style="
+  margin-top:20px;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:25px 20px;
+  text-align:center;
+">
+
+  ${[
+                ["Vehicle", vehicle ? vehicle.vehicle_name : "Unknown"],
+                ["Plate", vehicle?.plate_number || "—"],
+                ["Requestor", booking.requestor],
+                ["Dept.", getDepartmentName(booking, affiliations)],
+                ["Driver", booking.driver_name || "—"],
+                ["Date", formatVehicleDates(booking.dates)],
+                ["Purpose", booking.purpose],
+                ["Destination", booking.destination],
+                // ["Payment", booking.payment ? `₱ ${booking.payment}` : "—"]
+            ].map(row => `
+
+    <div>
+      <div style="
+        font-size:12px;
+        font-weight:400;
+        min-height:18px;
+      ">
+        ${row[1]}
+      </div>
+
+      <div style="
+        width:75%;
+        margin:5px auto;
+        border-bottom:1px solid #000;
+      "></div>
+
+      <div style="
+        font-size:9px;
+        font-weight:700;
+        letter-spacing:0.5px;
+      ">
+        ${row[0].toUpperCase()}
+      </div>
+    </div>
+
+  `).join("")}
+
+</div>
+<!-- CENTERED PAYMENT -->
+<div style="
+  margin-top:30px;
+  text-align:center;
+">
+
+  <div style="
+    font-size:13px;
+    font-weight:600;
+  ">
+    ${booking.payment ? `₱ ${booking.payment}` : "—"}
+  </div>
+
+  <div style="
+    width:40%;
+    margin:6px auto;
+    border-bottom:1px solid #000;
+  "></div>
+
+  <div style="
+    font-size:9px;
+    font-weight:700;
+    letter-spacing:0.5px;
+  ">
+    PAYMENT
+  </div>
+
+</div>
+
+
+
+
+ <!-- SIGNATURE -->
+<div style="
+  margin-top:30px;
+  display:flex;
+  justify-content:space-between;
+  font-size:9px;
+  text-align:center;
+">
+
+  <div style="width:45%;">
+    <div style="border-top:1px solid #000; margin-top:20px;"></div>
+    Requested By
+  </div>
+
+  <div style="width:45%;">
+    <div style="border-top:1px solid #000; margin-top:20px;"></div>
+    Approved By
+  </div>
+
+</div>
+
+
+  <!-- FOOTER -->
+  <div style="margin-top:50px; text-align:center; font-size:11px; color:#666;">
+    This document is system-generated and valid without signature.
+  </div>
+
 </div>
 `;
 
