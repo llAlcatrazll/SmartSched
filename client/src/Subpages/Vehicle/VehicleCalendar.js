@@ -3,6 +3,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import DriverScheduleTimeline from './DriverScheduleTimeline';
 
 const vehicleTypeColors = {
     'isuzu': '#b5d8f6',             // pastel blue
@@ -141,23 +142,30 @@ export default function VehicleBookingCalendar() {
                 const formatted = bookingsArr
                     .filter(b => !b.deleted && Array.isArray(b.dates) && b.dates.length > 0)
                     .map(b => {
-                        const typeKey = (b.vehicle_id || 'unregistered vehicle').toLowerCase();
+
+                        const typeKey = (b.vehicle_type || 'unregistered vehicle').toLowerCase();
                         const bgColor = vehicleTypeColors[typeKey] || '#e0e0e0';
 
                         return {
                             id: b.id,
-                            title: `Vehicle #${b.vehicle_id} | ${toTitleCase(b.requestor)}`,
-                            start: b.dates[0],        // ✅ FIX
-                            allDay: true,             // ✅ Vehicle bookings are date-based
+
+                            // ✅ USE VEHICLE NAME NOW
+                            title: `${b.vehicle_name} | ${toTitleCase(b.requestor)}`,
+
+                            start: b.start_date || b.dates?.[0],
+                            allDay: true,
+
                             backgroundColor: bgColor,
                             borderColor: bgColor,
                             textColor: '#000000',
+
                             extendedProps: {
-                                vehicleType: `Vehicle #${b.vehicle_id}`,
+                                vehicleType: b.vehicle_name,
                                 department: toTitleCase(b.department_id),
                                 purpose: b.purpose,
                                 requestor: toTitleCase(b.requestor),
-                                destination: b.destination
+                                destination: b.destination,
+                                plate: b.plate_number
                             }
                         };
                     });
@@ -364,6 +372,8 @@ export default function VehicleBookingCalendar() {
                 )}
 
             </div>
+            {/* wewewew */}
+            <DriverScheduleTimeline />
         </div>
     );
 }

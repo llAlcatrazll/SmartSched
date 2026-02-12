@@ -522,31 +522,31 @@ export default function EquipmentBooking() {
       `).join("")}
 
     </div>
-<!-- CENTERED PURPOSE -->
-<div style="
-  margin-top:25px;
-  text-align:center;
-">
+    <!-- CENTERED PURPOSE -->
+    <div style="
+    margin-top:25px;
+    text-align:center;
+    ">
 
-  <div style="font-size:13px; font-weight:500;">
-    ${booking.purpose || "—"}
-  </div>
+    <div style="font-size:13px; font-weight:500;">
+        ${booking.purpose || "—"}
+    </div>
 
-  <div style="
-    width:60%;
-    margin:6px auto;
-    border-bottom:1px solid #000;
-  "></div>
+    <div style="
+        width:60%;
+        margin:6px auto;
+        border-bottom:1px solid #000;
+    "></div>
 
-  <div style="
-    font-size:10px;
-    font-weight:700;
-    letter-spacing:0.5px;
-  ">
-    PURPOSE
-  </div>
+    <div style="
+        font-size:10px;
+        font-weight:700;
+        letter-spacing:0.5px;
+    ">
+        PURPOSE
+    </div>
 
-</div>
+    </div>
 
     <!-- SIGNATURES -->
     <div style="

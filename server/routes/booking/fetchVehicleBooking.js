@@ -9,15 +9,33 @@ const pool = new Pool({
 
 router.get('/', async (req, res) => {
     try {
-        const result = await pool.query(`
+        const result = await pool.query
+            (`
+
             SELECT
                 vb.*,
+
+                -- Driver
                 d.name AS driver_name,
-                vb.dates[1] AS start_date,    -- first date of the array
-                vb.dates[array_length(vb.dates,1)] AS end_date -- last date of array
+
+                -- Vehicle
+                v.vehicle_name,
+                v.plate_number,
+                v.vehicle_type,
+                v.passenger_capacity,
+
+                -- Date helpers
+                vb.dates[1] AS start_date,
+                vb.dates[array_length(vb.dates,1)] AS end_date
+
             FROM "VehicleBooking" vb
+
             LEFT JOIN "Drivers" d
                 ON d.id = vb.driver_id
+
+            LEFT JOIN "Vehicles" v
+                ON v.id = vb.vehicle_id::integer
+
             ORDER BY vb.dates[1] DESC
         `);
 
@@ -31,3 +49,13 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
+//     SELECT
+//         vb.*,
+//         d.name AS driver_name,
+//         vb.dates[1] AS start_date,    -- first date of the array
+//         vb.dates[array_length(vb.dates,1)] AS end_date -- last date of array
+//     FROM "VehicleBooking" vb
+//     LEFT JOIN "Drivers" d
+//         ON d.id = vb.driver_id
+//     ORDER BY vb.dates[1] DESC
+// `);
