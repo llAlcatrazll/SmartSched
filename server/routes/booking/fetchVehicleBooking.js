@@ -9,35 +9,44 @@ const pool = new Pool({
 
 router.get('/', async (req, res) => {
     try {
-        const result = await pool.query
-            (`
+        const result = await pool.query(`
+    SELECT
+        vb.id,
+        vb.vehicle_id,
+        vb.requestor,
+        vb.department_id,
+        vb.purpose,
+        vb.booker_id,
+        vb.deleted,
+        vb.payment,
+        vb.status,
+        vb.driver_id,
+        vb.destination,
+        vb.start_datetime,
+        vb.end_datetime,
 
-            SELECT
-                vb.*,
+        -- Driver
+        d.name AS driver_name,
 
-                -- Driver
-                d.name AS driver_name,
+        -- Vehicle
+        v.vehicle_name,
+        v.plate_number,
+        v.vehicle_type,
+        v.passenger_capacity
 
-                -- Vehicle
-                v.vehicle_name,
-                v.plate_number,
-                v.vehicle_type,
-                v.passenger_capacity,
+    FROM "VehicleBooking" vb
 
-                -- Date helpers
-                vb.dates[1] AS start_date,
-                vb.dates[array_length(vb.dates,1)] AS end_date
+    LEFT JOIN "Drivers" d
+        ON d.id = vb.driver_id
 
-            FROM "VehicleBooking" vb
+    LEFT JOIN "Vehicles" v
+        ON v.id = vb.vehicle_id
 
-            LEFT JOIN "Drivers" d
-                ON d.id = vb.driver_id
+    WHERE vb.deleted = false
 
-            LEFT JOIN "Vehicles" v
-                ON v.id = vb.vehicle_id::integer
+    ORDER BY vb.start_datetime DESC
+`);
 
-            ORDER BY vb.dates[1] DESC
-        `);
 
         console.log("Fetched vehicle rows:", result.rows);
         res.json(result.rows);

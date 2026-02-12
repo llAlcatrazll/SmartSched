@@ -79,43 +79,27 @@ export default function DriverScheduleTimeline() {
             )
             .forEach(b => {
 
-                if (!Array.isArray(b.dates) || b.dates.length === 0) return;
+                if (!b.start_datetime || !b.end_datetime) return;
 
-                // Convert and sort dates
-                const sortedDates = b.dates
-                    .map(d => new Date(d))
-                    .sort((a, b) => a - b);
+                const bookingStart = new Date(b.start_datetime);
+                const bookingEnd = new Date(b.end_datetime);
 
-                let groupStart = sortedDates[0];
-                let previous = sortedDates[0];
+                // Only show bookings overlapping current window
+                if (bookingEnd > start && bookingStart < end) {
+                    hasVisibleBooking = true;
 
-                for (let i = 1; i <= sortedDates.length; i++) {
-                    const current = sortedDates[i];
-
-                    const isConsecutive =
-                        current &&
-                        (current - previous) / (1000 * 60 * 60 * 24) === 1;
-
-                    if (!isConsecutive) {
-                        // Close current group
-                        const groupEnd = new Date(previous);
-                        groupEnd.setDate(groupEnd.getDate() + 1);
-
-                        rows.push([
-                            b.driver_name,
-                            `${b.vehicle_name}`,
-                            groupStart,
-                            groupEnd
-                        ]);
-
-                        // Start new group
-                        groupStart = current;
-                    }
-
-                    previous = current;
+                    rows.push([
+                        b.driver_name,
+                        `${b.vehicle_name}
+ ${new Date(b.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+-
+${new Date(b.end_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                        ,
+                        bookingStart,
+                        bookingEnd
+                    ]);
                 }
             });
-
 
         // 👇 FORCE WINDOW EVEN IF EMPTY
         // if (!hasVisibleBooking) {
