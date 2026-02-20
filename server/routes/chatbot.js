@@ -74,7 +74,7 @@ router.post("/", async (req, res) => {
             FROM "VehicleBooking"
             WHERE vehicle_id = $1
               AND deleted = false
-              AND $2 = ANY(dates)
+              AND DATE(start_datetime) = $2
             LIMIT 1
             `,
                 [String(v.id), dateISO]
@@ -184,7 +184,8 @@ router.post("/", async (req, res) => {
         formattedBookings.push(
             `- Latest Vehicle Booking:
   Vehicle: ${b.vehicle_name || `Vehicle ${b.vehicle_id}`}
-  Date(s): ${Array.isArray(b.dates) ? b.dates.join(", ") : "N/A"}
+  Date: ${b.start_datetime?.toISOString().split("T")[0] || "N/A"}
+Time: ${b.start_datetime?.toISOString().slice(11, 16)}–${b.end_datetime?.toISOString().slice(11, 16)}
   Purpose: ${b.purpose || "N/A"}
   Destination: ${b.destination || "N/A"}`
         );
@@ -303,7 +304,11 @@ VEHICLE:
   "driver_id": null,
   "requestor": "",
   "department_id": "number",
-  "dates": ["YYYY-MM-DD"],
+  "schedule": {
+     "date": "YYYY-MM-DD",
+     "startTime": "HH:MM",
+     "endTime": "HH:MM"
+  },
   "purpose": "",
   "destination": ""
 }
@@ -364,12 +369,93 @@ ${formattedBookings.join("\n") || "None"}
             bookingData = JSON.parse(jsonMatch[0]);
         } catch { }
     }
-
     /* ==================================================
        CREATE BOOKING
     ================================================== */
 
     if (bookingData?.intent === "create_booking") {
+        // ==================================================
+        // VEHICLE NAME → VEHICLE ID (FACILITY STYLE)
+        // ==================================================
+        if (bookingData.resource_type === "vehicle") {
+
+            const vehiclesResult = await pool.query(
+                `SELECT id, vehicle_name FROM "Vehicles" WHERE enabled = true`
+            );
+
+            const messageLower = message.toLowerCase();
+
+            let matchedVehicle = null;
+
+            for (const v of vehiclesResult.rows) {
+
+                const vehicleName = v.vehicle_name.toLowerCase();
+
+                const regex = new RegExp(
+                    `\\b${vehicleName.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")}\\b`,
+                    "i"
+                );
+
+                if (regex.test(messageLower)) {
+                    matchedVehicle = v;
+                    break;
+                }
+            }
+
+            if (!matchedVehicle) {
+                return res.json({
+                    reply:
+                        "❌ Vehicle could not be identified.\n\n" +
+                        "Please provide the exact vehicle name (e.g., Hilux, Bus, Van)."
+                });
+            }
+
+            // 🔥 ALWAYS override AI value
+            bookingData.vehicle_id = matchedVehicle.id;
+        }
+        // ==================================================
+        // DEPARTMENT NAME → DEPARTMENT ID (FACILITY STYLE)
+        // ==================================================
+        if (bookingData.resource_type === "vehicle") {
+
+            const deptResult = await pool.query(
+                `SELECT id, meaning FROM "Affiliations"`
+            );
+
+            const messageLower = message.toLowerCase();
+
+            let matchedDept = null;
+
+            for (const d of deptResult.rows) {
+
+                const abbrev = d.abbreviation?.toLowerCase() || "";
+                const meaning = d.meaning?.toLowerCase() || "";
+
+                if (
+                    messageLower.includes(abbrev) ||
+                    messageLower.includes(meaning)
+                ) {
+                    matchedDept = d;
+                    break;
+                }
+
+                if (regex.test(messageLower)) {
+                    matchedDept = d;
+                    break;
+                }
+            }
+
+            if (!matchedDept) {
+                return res.json({
+                    reply:
+                        "❌ Department could not be identified.\n\n" +
+                        "Please provide the exact department name."
+                });
+            }
+
+            bookingData.department_id = matchedDept.id;
+        }
+
         // ==================================================
         // STRICT FIELD VALIDATION
         // ==================================================
@@ -400,8 +486,14 @@ ${formattedBookings.join("\n") || "None"}
             if (!bookingData.vehicle_id) missingFields.push("Vehicle");
             if (!bookingData.requestor) missingFields.push("Requestor");
             if (!bookingData.department_id) missingFields.push("Department");
-            if (!Array.isArray(bookingData.dates) || bookingData.dates.length === 0)
+            if (!bookingData.schedule?.date)
                 missingFields.push("Date");
+
+            if (!bookingData.schedule?.startTime)
+                missingFields.push("Start Time");
+
+            if (!bookingData.schedule?.endTime)
+                missingFields.push("End Time");
             if (!bookingData.purpose) missingFields.push("Purpose");
             if (!bookingData.destination) missingFields.push("Destination");
         }
@@ -478,28 +570,36 @@ ${formattedBookings.join("\n") || "None"}
         // ==================================================
         if (bookingData.resource_type === "vehicle") {
 
-            for (const date of bookingData.dates) {
+            const { date, startTime, endTime } = bookingData.schedule;
 
-                const conflictCheck = await pool.query(
-                    `
-            SELECT purpose
-            FROM "VehicleBooking"
-            WHERE vehicle_id = $1
-              AND deleted = false
-              AND $2 = ANY(dates)
-            LIMIT 1
-            `,
-                    [bookingData.vehicle_id, date]
-                );
+            const conflictCheck = await pool.query(
+                `
+                SELECT 1
+                FROM "VehicleBooking"
+                WHERE vehicle_id = $1
+                AND deleted = false
+                AND DATE(start_datetime) = $2
+                AND (
+                    start_datetime::time < $4
+                    AND end_datetime::time > $3
+                )
+                LIMIT 1
+                `,
+                [
+                    bookingData.vehicle_id,
+                    date,
+                    startTime,
+                    endTime
+                ]
+            );
 
-                if (conflictCheck.rowCount > 0) {
-                    return res.json({
-                        reply:
-                            `❌ Vehicle conflict detected.\n\n` +
-                            `This vehicle is already booked on ${date}.\n\n` +
-                            `Please resend the FULL booking with a different date.`
-                    });
-                }
+            if (conflictCheck.rowCount > 0) {
+                return res.json({
+                    reply:
+                        `❌ Vehicle conflict detected.\n\n` +
+                        `The vehicle is already booked on ${date} between ${startTime}–${endTime}.\n\n` +
+                        `Please resend the FULL booking with a different time or date.`
+                });
             }
         }
 
@@ -601,36 +701,24 @@ ${formattedBookings.join("\n") || "None"}
                VEHICLE NAME → VEHICLE ID (DYNAMIC, NO HARD-CODE)
             ================================================== */
 
+
             if (
-                bookingData.resource_type === "vehicle" &&
-                (!bookingData.vehicle_id || isNaN(Number(bookingData.vehicle_id)))
-            ) {
-                // Fetch all enabled vehicles
-                const vehiclesResult = await pool.query(
-                    `SELECT id, vehicle_name FROM "Vehicles" WHERE enabled = true`
-                );
-
-                const messageLower = message.toLowerCase();
-
-                for (const v of vehiclesResult.rows) {
-                    const name = v.vehicle_name.toLowerCase();
-
-                    // Simple but effective name match
-                    if (messageLower.includes(name)) {
-                        bookingData.vehicle_id = v.id;
-                        break;
-                    }
-                }
-            }
-            if (
-                bookingData.resource_type === "vehicle" &&
+                bookingData?.resource_type === "vehicle" &&
                 (!bookingData.vehicle_id || isNaN(Number(bookingData.vehicle_id)))
             ) {
                 throw new Error(
                     "Vehicle could not be identified. Please specify the vehicle name."
                 );
             }
+            if (bookingData.resource_type === "vehicle") {
 
+                const { date, startTime, endTime } = bookingData.schedule;
+
+                bookingData.start_datetime = `${date}T${startTime}`;
+                bookingData.end_datetime = `${date}T${endTime}`;
+
+                delete bookingData.schedule;
+            }
             const response = await axios.post(
                 `http://localhost:5000${endpoint}`,
                 bookingData
