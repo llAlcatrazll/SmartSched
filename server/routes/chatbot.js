@@ -312,11 +312,14 @@ VEHICLE:
   "purpose": "",
   "destination": ""
 }
-  EQUIPMENT:
+EQUIPMENT:
 {
   "intent": "create_booking",
   "resource_type": "equipment",
-  "equipments": [{ "equipmentId": "number", "quantity": 1 }]
+  "equipments": [
+    { "equipmentId": "number" }
+  ],
+  "quantity": "number",
   "department_id": "number",
   "facility_id": "number",
   "dates": ["YYYY-MM-DD"],
@@ -374,6 +377,46 @@ ${formattedBookings.join("\n") || "None"}
     ================================================== */
 
     if (bookingData?.intent === "create_booking") {
+        // ==================================================
+        // EQUIPMENT NAME → EQUIPMENT ID (FACILITY STYLE)
+        // ==================================================
+        if (bookingData.resource_type === "equipment") {
+
+            const equipmentsResult = await pool.query(
+                `SELECT id, name FROM "Equipments" WHERE enabled = true`
+            );
+
+            const messageLower = message.toLowerCase();
+
+            const matchedEquipments = [];
+
+            for (const eq of equipmentsResult.rows) {
+
+                const eqName = eq.name.toLowerCase();
+
+                const regex = new RegExp(
+                    `\\b${eqName.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")}\\b`,
+                    "i"
+                );
+
+                if (regex.test(messageLower)) {
+                    matchedEquipments.push({
+                        equipmentId: eq.id,
+                        quantity: bookingData.quantity || 1
+                    });
+                }
+            }
+
+            if (matchedEquipments.length === 0) {
+                return res.json({
+                    reply:
+                        "❌ Equipment could not be identified.\n\n" +
+                        "Please provide the exact equipment name."
+                });
+            }
+
+            bookingData.equipments = matchedEquipments;
+        }
         // ==================================================
         // VEHICLE NAME → VEHICLE ID (FACILITY STYLE)
         // ==================================================
@@ -455,7 +498,81 @@ ${formattedBookings.join("\n") || "None"}
 
             bookingData.department_id = matchedDept.id;
         }
+        // ==================================================
+        // DEPARTMENT NAME → DEPARTMENT ID (FOR EQUIPMENT)
+        // ==================================================
+        if (bookingData.resource_type === "equipment") {
 
+            const deptResult = await pool.query(
+                `SELECT id, abbreviation, meaning FROM "Affiliations" WHERE enabled = true`
+            );
+
+            const messageLower = message.toLowerCase();
+
+            let matchedDept = null;
+
+            for (const d of deptResult.rows) {
+
+                const abbrev = d.abbreviation?.toLowerCase() || "";
+                const meaning = d.meaning?.toLowerCase() || "";
+
+                if (
+                    messageLower.includes(abbrev) ||
+                    messageLower.includes(meaning)
+                ) {
+                    matchedDept = d;
+                    break;
+                }
+            }
+
+            if (!matchedDept) {
+                return res.json({
+                    reply:
+                        "❌ Department could not be identified.\n\n" +
+                        "Please provide the exact department name."
+                });
+            }
+
+            bookingData.department_id = matchedDept.id;
+        }
+        // ==================================================
+        // FACILITY NAME → FACILITY ID (FOR EQUIPMENT)
+        // ==================================================
+        if (bookingData.resource_type === "equipment") {
+
+            const facilitiesResult = await pool.query(
+                `SELECT id, name FROM "Facilities" WHERE enabled = true`
+            );
+
+            const messageLower = message.toLowerCase();
+
+            let matchedFacility = null;
+
+            for (const f of facilitiesResult.rows) {
+
+                const facilityName = f.name.toLowerCase();
+
+                const regex = new RegExp(
+                    `\\b${facilityName.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")}\\b`,
+                    "i"
+                );
+
+                if (regex.test(messageLower)) {
+                    matchedFacility = f;
+                    break;
+                }
+            }
+
+            if (!matchedFacility) {
+                return res.json({
+                    reply:
+                        "❌ Facility could not be identified.\n\n" +
+                        "Please provide the exact facility name."
+                });
+            }
+
+            bookingData.facility_id = matchedFacility.id;
+        }
         // ==================================================
         // STRICT FIELD VALIDATION
         // ==================================================
@@ -497,18 +614,39 @@ ${formattedBookings.join("\n") || "None"}
             if (!bookingData.purpose) missingFields.push("Purpose");
             if (!bookingData.destination) missingFields.push("Destination");
         }
+        if (bookingData.resource_type === "equipment") {
+            bookingData.departmentId = bookingData.department_id;
+            bookingData.facilityId = bookingData.facility_id;
+            bookingData.timeStart = bookingData.time_start;
+            bookingData.timeEnd = bookingData.time_end;
 
+            delete bookingData.department_id;
+            delete bookingData.facility_id;
+            delete bookingData.time_start;
+            delete bookingData.time_end;
+        }
         if (bookingData.resource_type === "equipment") {
 
             if (!Array.isArray(bookingData.equipments) || bookingData.equipments.length === 0)
                 missingFields.push("Equipment Selection");
-            if (!bookingData.department_id) missingFields.push("Department");
-            if (!bookingData.facility_id) missingFields.push("Facility");
+
+            if (!bookingData.departmentId)
+                missingFields.push("Department");
+
+            if (!bookingData.facilityId)
+                missingFields.push("Facility");
+
             if (!Array.isArray(bookingData.dates) || bookingData.dates.length === 0)
                 missingFields.push("Date");
-            if (!bookingData.time_start) missingFields.push("Start Time");
-            if (!bookingData.time_end) missingFields.push("End Time");
-            if (!bookingData.purpose) missingFields.push("Purpose");
+
+            if (!bookingData.timeStart)
+                missingFields.push("Start Time");
+
+            if (!bookingData.timeEnd)
+                missingFields.push("End Time");
+
+            if (!bookingData.purpose)
+                missingFields.push("Purpose");
         }
 
         // If anything missing → STOP
@@ -610,38 +748,39 @@ ${formattedBookings.join("\n") || "None"}
                 endpoint = "/api/create-booking";
             if (bookingData.resource_type === "vehicle")
                 endpoint = "/api/create-vehicle-booking";
-
+            if (bookingData.resource_type === "equipment")
+                endpoint = "/api/create-equipment-booking";
             if (!endpoint) throw new Error("Unknown resource type");
             /* ==================================================
                EQUIPMENT NAME → EQUIPMENT ID (DYNAMIC)
             ================================================== */
 
-            if (
-                bookingData.resource_type === "equipment" &&
-                (!bookingData.equipment_type_id || isNaN(Number(bookingData.equipment_type_id)))
-            ) {
-                const equipmentsResult = await pool.query(
-                    `SELECT id, name FROM "Equipments" WHERE enabled = true`
-                );
+            // if (
+            //     bookingData.resource_type === "equipment" &&
+            //     (!bookingData.equipment_type_id || isNaN(Number(bookingData.equipment_type_id)))
+            // ) {
+            //     const equipmentsResult = await pool.query(
+            //         `SELECT id, name FROM "Equipments" WHERE enabled = true`
+            //     );
 
-                const messageLower = message.toLowerCase();
+            //     const messageLower = message.toLowerCase();
 
-                for (const eq of equipmentsResult.rows) {
-                    if (messageLower.includes(eq.name.toLowerCase())) {
-                        bookingData.equipment_type_id = eq.id;
-                        break;
-                    }
-                }
-            }
+            //     for (const eq of equipmentsResult.rows) {
+            //         if (messageLower.includes(eq.name.toLowerCase())) {
+            //             bookingData.equipment_type_id = eq.id;
+            //             break;
+            //         }
+            //     }
+            // }
 
-            if (
-                bookingData.resource_type === "equipment" &&
-                (!bookingData.equipment_type_id || isNaN(Number(bookingData.equipment_type_id)))
-            ) {
-                throw new Error(
-                    "Equipment could not be identified. Please specify the equipment name."
-                );
-            }
+            // if (
+            //     bookingData.resource_type === "equipment" &&
+            //     (!bookingData.equipment_type_id || isNaN(Number(bookingData.equipment_type_id)))
+            // ) {
+            //     throw new Error(
+            //         "Equipment could not be identified. Please specify the equipment name."
+            //     );
+            // }
             /* ==================================================
                FACILITY NAME → FACILITY ID (DYNAMIC, SUPPORTS NUMBERS)
             ================================================== */
