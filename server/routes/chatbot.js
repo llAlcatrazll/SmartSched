@@ -11,8 +11,26 @@ const pool = new Pool({
 
 router.post("/", async (req, res) => {
     const { message, bookings = {}, currentDateTime } = req.body;
+    // PREVENT , AI resend
+    if (!message || message.trim().length < 3) {
+        return res.json({ reply: "" });
+    }
     const formattedBookings = [];
+    function formatTime12(timeStr) {
+        const [hour, minute] = timeStr.split(":").map(Number);
+        const ampm = hour >= 12 ? "PM" : "AM";
+        const h = hour % 12 === 0 ? 12 : hour % 12;
+        return `${h}:${minute.toString().padStart(2, "0")} ${ampm}`;
+    }
 
+    function formatPrettyDate(isoDate) {
+        const d = new Date(isoDate);
+        return d.toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric"
+        });
+    }
     function parseMonthDayToISO(text, year = 2026) {
         const months = {
             january: "01",
@@ -692,13 +710,97 @@ ${formattedBookings.join("\n") || "None"}
 
                     const conflict = conflictCheck.rows[0];
 
+                    /* ========================================
+                       1️⃣ FIND NEXT AVAILABLE DATES (14 DAYS)
+                    ======================================== */
+
+                    const availableDates = [];
+                    const baseDate = new Date(s.date);
+
+                    for (let i = 1; i <= 14; i++) {
+                        const checkDate = new Date(baseDate);
+                        checkDate.setDate(baseDate.getDate() + i);
+
+                        const day = checkDate.getDay();
+
+                        // Monday–Friday only
+                        if (day === 0 || day === 6) continue;
+
+                        const dateStr = checkDate.toISOString().split("T")[0];
+
+                        const existing = await pool.query(
+                            `
+            SELECT 1 FROM "Booking"
+            WHERE event_facility = $1
+              AND event_date = $2
+              AND deleted = false
+            `,
+                            [bookingData.event_facility, dateStr]
+                        );
+
+                        if (existing.rowCount === 0) {
+                            availableDates.push(
+                                `• ${formatPrettyDate(dateStr)} (7:00 AM – 7:00 PM)`
+                            );
+                        }
+
+                        if (availableDates.length >= 5) break;
+                    }
+
+                    /* ========================================
+                       2️⃣ FIND ALTERNATE FACILITIES
+                    ======================================== */
+
+                    const currentFacility = facilityMap[bookingData.event_facility];
+
+                    let alternateFacilities = [];
+
+                    if (currentFacility) {
+
+                        const altResult = await pool.query(
+                            `
+            SELECT id, name, capacity
+            FROM "Facilities"
+            WHERE enabled = true
+              AND id != $1
+              AND capacity >= $2
+            LIMIT 5
+            `,
+                            [
+                                bookingData.event_facility,
+                                currentFacility.capacity || 0
+                            ]
+                        );
+
+                        alternateFacilities = altResult.rows.map(
+                            f => `• ${f.name} (capacity ${f.capacity})`
+                        );
+                    }
+
+                    /* ========================================
+                       3️⃣ RETURN SMART RESPONSE
+                    ======================================== */
+
                     return res.json({
                         reply:
                             `❌ Booking conflict detected.\n\n` +
-                            `Existing booking:\n` +
+                            `🏢 Facility: ${currentFacility?.name || bookingData.event_facility}\n` +
+                            `📅 Date: ${formatPrettyDate(s.date)}\n` +
+                            `⏰ Requested Time: ${formatTime12(s.startTime)} – ${formatTime12(s.endTime)}\n\n` +
+
+                            `🔴 Conflicts With:\n` +
                             `• Event: ${conflict.event_name}\n` +
-                            `• Time: ${conflict.starting_time.slice(0, 5)}–${conflict.ending_time.slice(0, 5)}\n\n` +
-                            `Please resend the FULL booking with a different time or date.`
+                            `• Time: ${formatTime12(conflict.starting_time.slice(0, 5))} – ${formatTime12(conflict.ending_time.slice(0, 5))}\n\n` +
+
+                            (availableDates.length
+                                ? `📆 Other Available Dates (Mon–Fri, 6AM–7PM):\n${availableDates.join("\n")}\n\n`
+                                : ``) +
+
+                            (alternateFacilities.length
+                                ? `🏢 Other Available Facilities:\n${alternateFacilities.join("\n")}\n\n`
+                                : ``) +
+
+                            `Please resend the FULL booking with your preferred option.`
                     });
                 }
             }
