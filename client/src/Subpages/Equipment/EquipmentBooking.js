@@ -639,8 +639,9 @@ export default function EquipmentBooking() {
                                                         (!equipmentForm.rangeStart || !equipmentForm.rangeEnd)
                                                     )
                                                 }
-
-                                            >  <option value="">
+                                            >
+                                                {/* ✅ DEFAULT MESSAGE OPTION */}
+                                                <option value="">
                                                     {!equipmentForm.timeStart || !equipmentForm.timeEnd
                                                         ? "Select time first"
                                                         : (
@@ -653,7 +654,6 @@ export default function EquipmentBooking() {
                                                 </option>
 
                                                 {getFilteredEquipmentsForDropdown(index).map(e => {
-
                                                     let label = `${e.name} (${e.model_id})`;
                                                     let disabled = false;
 
